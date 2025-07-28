@@ -38,7 +38,7 @@ export class UsersController {
       });
     }
 
-    return this.usersService.createUser(name, email, password, mobileNumber, gender, address, referralCode);
+    return this.usersService.createUser(name, email, password, mobileNumber, referralCode, gender, address);
   }
 
   @Get('/getUserById/:id')
@@ -107,5 +107,43 @@ async updateUserDetails(
 
   return this.usersService.updateUserDetails(userId, body);
 }
+
+  @Get('/all')
+  @UseGuards(JwtAuthGuard)
+  async getAllUsers() {
+    return this.usersService.getAllUsers();
+  }
+
+  @Post('/delete/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteUser(@Param('id') id: string) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+        data: null,
+      });
+    }
+    return this.usersService.deleteUserById(userId);
+  }
+
+  @Post('/updatePassword/:id')
+  @UseGuards(JwtAuthGuard)
+  async updateUserPassword(
+    @Param('id') id: string,
+    @Body() body: { newPassword: string },
+  ) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+        data: null,
+      });
+    }
+    const { newPassword } = body;
+    return this.usersService.updateUserPassword(userId, newPassword);
+  }
 
 }

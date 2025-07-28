@@ -91,6 +91,12 @@ export class UsersService {
       }
 
       referredByCode = referrerResult[0].referral_code;
+      // Increment referralCount for the referrer
+      const currentCount = referrerResult[0].referralCount || 0;
+      await db
+        .update(users)
+        .set({ referralCount: currentCount + 1 })
+        .where(eq(users.referral_code, referredByCode));
     }
 
     const result = await db
@@ -351,5 +357,43 @@ async updateUserDetails(
     throw new InternalServerErrorException(error.message || 'Failed to update user');
   }
 }
+
+  async deleteUserById(id: number) {
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    if (!result || result.length === 0) {
+      throw new NotFoundException('User not found');
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'User deleted successfully',
+      data: { id },
+    };
+  }
+
+  async updateUserPassword(id: number, newPassword: string) {
+    if (!newPassword) {
+      throw new InternalServerErrorException('New password is required');
+    }
+    const encryptedPassword = this.encryptPassword(newPassword);
+    const result = await db
+      .update(users)
+      .set({ password_hash: encryptedPassword })
+      .where(eq(users.id, id))
+      .returning();
+    if (!result || result.length === 0) {
+      throw new NotFoundException('User not found');
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Password updated successfully',
+      data: { id },
+    };
+  }
+
+  async getAllUsers() {
+    const allUsers = await db.select().from(users);
+    // Exclude password_hash from the returned data
+    return allUsers.map(({ password_hash, ...user }) => user);
+  }
 
 }

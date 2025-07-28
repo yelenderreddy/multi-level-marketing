@@ -9,14 +9,16 @@ import { ProductService } from './product/product.service';
 import { ProductModule } from './product/product.module';
 import { FaqService } from './faq/faq.service';
 import { FaqModule } from './faq/faq.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // 👈 enables .env and makes ConfigService available everywhere
+    ConfigModule.forRoot({ isGlobal: true }), //  enables .env and makes ConfigService available everywhere
     UsersModule,
     RazorpayModule,
     ProductModule,
     FaqModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, ProductService, FaqService],

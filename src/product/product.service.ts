@@ -152,4 +152,49 @@ export class ProductService {
   };
 }
 
+  async getProductById(productId: number): Promise<{ statusCode: number; message: string; data?: any }> {
+    try {
+      const result = await db.select().from(products).where(eq(products.id, productId));
+      if (!result || result.length === 0) {
+        throw new NotFoundException('Product not found');
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product fetched successfully',
+        data: result[0],
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to fetch product',
+      );
+    }
+  }
+
+  async updateProduct(productId: number, updates: Record<string, any>): Promise<{ statusCode: number; message: string; data?: any }> {
+    try {
+      if (!updates || Object.keys(updates).length === 0) {
+        throw new HttpException('No update fields provided', HttpStatus.BAD_REQUEST);
+      }
+      const result = await db
+        .update(products)
+        .set(updates)
+        .where(eq(products.id, productId))
+        .returning();
+      if (!result || result.length === 0) {
+        throw new NotFoundException('Product not found');
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product updated successfully',
+        data: result[0],
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to update product',
+      );
+    }
+  }
+
 }

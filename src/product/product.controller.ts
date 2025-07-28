@@ -38,6 +38,19 @@ export class ProductController {
     return this.productService.getAllProducts();
   }
 
+  @Get('/:id')
+  async getProductById(@Param('id') id: string) {
+    const productId = parseInt(id, 10);
+    if (isNaN(productId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid product ID',
+        data: null,
+      });
+    }
+    return this.productService.getProductById(productId);
+  }
+
   @Post('/order')
 async orderProduct(@Body() body: { userId: number, productName: string, quantity?: number }) {
   const { userId, productName, quantity } = body;
@@ -61,5 +74,21 @@ async getOrderHistory(@Param('userId') userId: string) {
 
   return this.productService.getOrderHistory(id);
 }
+
+  @Post('/update/:id')
+  async updateProduct(
+    @Param('id') id: string,
+    @Body() updates: Record<string, any>,
+  ) {
+    const productId = parseInt(id, 10);
+    if (isNaN(productId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid product ID',
+        data: null,
+      });
+    }
+    return this.productService.updateProduct(productId, updates);
+  }
 
 }
