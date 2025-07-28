@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   password_hash: varchar("password_hash", { length: 255 }).notNull(),
   referral_code: varchar("referral_code", { length: 50 }).notNull().unique(),
   referralCount: integer("referral_count").default(0).notNull(),
+  
+  reward: varchar('reward', { length: 255 }),
   // establish relationship using referral_code
   referred_by_code: varchar("referred_by_code", { length: 50 })
     .references(() => users.referral_code, { onDelete: "set null" }),

@@ -12,5 +12,6 @@ export const orderHistory = pgTable('order_history', {
   productId: integer('product_id').notNull(),
   productName: varchar('product_name', { length: 255 }).notNull(),
   quantity: integer('quantity').notNull().default(1),
+  status: varchar('status', { length: 32 }).notNull().default('confirmed'),
   orderedAt: timestamp('ordered_at', { withTimezone: true }).defaultNow().notNull(),
 });

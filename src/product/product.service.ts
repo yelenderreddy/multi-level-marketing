@@ -116,6 +116,7 @@ export class ProductService {
       productId: product.id,
       productName: product.productName,
       quantity,
+      status: 'confirmed',
     });
 
     return {
@@ -151,6 +152,26 @@ export class ProductService {
     data: orders,
   };
 }
+
+  async updateOrderStatus(orderId: number, status: string) {
+    try {
+      const result = await db
+        .update(orderHistory)
+        .set({ status })
+        .where(eq(orderHistory.id, orderId))
+        .returning();
+      if (!result || result.length === 0) {
+        throw new NotFoundException('Order not found');
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Order status updated successfully',
+        data: result[0],
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error?.message || 'Failed to update order status');
+    }
+  }
 
   async getProductById(productId: number): Promise<{ statusCode: number; message: string; data?: any }> {
     try {

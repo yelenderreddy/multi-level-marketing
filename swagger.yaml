@@ -32,46 +32,6 @@ components:
           type: integer
         productCode:
           type: integer
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-        mobileNumber:
-          type: string
-        gender:
-          type: string
-        address:
-          type: string
-        referralCode:
-          type: string
-        referredByCode:
-          type: string
-        paymentStatus:
-          type: string
-          enum: [PENDING, PAID]
-    OrderHistory:
-      type: object
-      properties:
-        id:
-          type: integer
-        userId:
-          type: integer
-        productId:
-          type: integer
-        productName:
-          type: string
-        quantity:
-          type: integer
-        orderedAt:
-          type: string
-          format: date-time
     Payment:
       type: object
       properties:
@@ -99,6 +59,76 @@ components:
         updated_at:
           type: string
           format: date-time
+    RewardTarget:
+      type: object
+      properties:
+        id:
+          type: integer
+        referralCount:
+          type: integer
+        reward:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AdminLoginResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+        token:
+          type: string
+    OrderHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+        orderedAt:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        mobileNumber:
+          type: string
+        gender:
+          type: string
+        address:
+          type: string
+        referralCode:
+          type: string
+        referredByCode:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [PENDING, PAID]
+        reward:
+          type: string
+        referralCount:
+          type: integer
 paths:
   /faq/createFaq:
     post:
@@ -390,6 +420,194 @@ paths:
       responses:
         '200':
           description: User updated
+  /api/admin/login:
+    post:
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLoginResponse'
+        '401':
+          description: Invalid credentials
+  /api/admin/reward-target:
+    post:
+      summary: Add a reward target
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                referralCount:
+                  type: integer
+                reward:
+                  type: string
+      responses:
+        '201':
+          description: Reward target added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardTarget'
+  /api/admin/reward-targets:
+    get:
+      summary: Get all reward targets
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of reward targets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RewardTarget'
+  /api/admin/reward-target/update/{id}:
+    post:
+      summary: Update a reward target
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Reward target updated
+  /api/admin/reward-target/delete/{id}:
+    post:
+      summary: Delete a reward target
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Reward target deleted
+  /api/admin/users-by-referral-count/{count}:
+    get:
+      summary: Get users by referral count with their referred users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: count
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  type: integer
+                pageSize:
+                  type: integer
+      responses:
+        '200':
+          description: Users and their referred users
+  /api/admin/approve-reward/{userId}:
+    post:
+      summary: Approve or deliver a reward for a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reward:
+                  type: string
+                  description: The reward to approve (required for approval)
+                status:
+                  type: string
+                  enum: [approved, delivered]
+                  description: Set to 'approved' to approve, or 'delivered' to mark as delivered
+      responses:
+        '200':
+          description: Reward status updated for user
+  /product/update/{id}:
+    post:
+      summary: Update a product
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Product updated
+  /product/order-status/{orderId}:
+    post:
+      summary: Update order status
+      parameters:
+        - in: path
+          name: orderId
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Order status updated
   /:
     get:
       summary: Root hello endpoint

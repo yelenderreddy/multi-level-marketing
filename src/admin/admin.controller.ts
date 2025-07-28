@@ -1,7 +1,9 @@
-import { Controller, Post, Body, HttpStatus, UnauthorizedException, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, UnauthorizedException, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AdminService } from './admin.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/admin')
 export class AdminController {
   constructor(private readonly jwtService: JwtService, private readonly adminService: AdminService) {}
@@ -57,5 +59,43 @@ export class AdminController {
       });
     }
     return this.adminService.updateRewardTarget(targetId, updates);
+  }
+
+  @Get('users-by-referral-count/:count')
+  async getUsersByReferralCountWithReferred(
+    @Param('count') count: string,
+    @Body() body: { page?: number; pageSize?: number } = {},
+  ) {
+    const referralCount = parseInt(count, 10);
+    if (isNaN(referralCount)) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid referralCount',
+      });
+    }
+    const { page = 1, pageSize = 10 } = body || {};
+    return this.adminService.getUsersByReferralCountWithReferred(referralCount, page, pageSize);
+  }
+
+  @Post('approve-reward/:userId')
+  async approveUserReward(
+    @Param('userId') userId: string,
+    @Body() body: { reward: string, status?: string },
+  ) {
+    const id = parseInt(userId, 10);
+    if (isNaN(id)) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+      });
+    }
+    const { reward, status } = body;
+    if (!reward && !status) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Reward or status is required',
+      });
+    }
+    return this.adminService.approveUserReward(id, reward, status);
   }
 } 

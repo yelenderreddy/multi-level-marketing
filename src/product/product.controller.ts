@@ -75,6 +75,30 @@ async getOrderHistory(@Param('userId') userId: string) {
   return this.productService.getOrderHistory(id);
 }
 
+  @Post('/order-status/:orderId')
+  async updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @Body() body: { status: string },
+  ) {
+    const id = parseInt(orderId, 10);
+    if (isNaN(id)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid order ID',
+        data: null,
+      });
+    }
+    const { status } = body;
+    if (!status) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Status is required',
+        data: null,
+      });
+    }
+    return this.productService.updateOrderStatus(id, status);
+  }
+
   @Post('/update/:id')
   async updateProduct(
     @Param('id') id: string,

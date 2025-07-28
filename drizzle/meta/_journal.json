@@ -15,6 +15,13 @@
       "when": 1753676087434,
       "tag": "0001_nifty_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753698783212,
+      "tag": "0002_clear_dracula",
+      "breakpoints": true
     }
   ]
 }
