@@ -41,7 +41,7 @@ export class AdminController {
     }
     return this.adminService.addRewardTarget(referralCount, reward);
   }
-
+   
   @Get('reward-targets')
   @UseGuards(JwtAuthGuard)
   async getAllRewardTargets() {
