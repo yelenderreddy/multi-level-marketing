@@ -22,6 +22,13 @@
       "when": 1753698783212,
       "tag": "0002_clear_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1753761288116,
+      "tag": "0003_natural_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

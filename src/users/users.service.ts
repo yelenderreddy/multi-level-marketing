@@ -68,8 +68,11 @@ export class UsersService {
     mobileNumber: string,
     referralCode?: string,
     gender?: string,
-    address?: string
-
+    address?: string,
+    referredByCode?: string,
+    paymentStatus?: 'PENDING' | 'PAID',
+    reward?: string,
+    referralCount?: number
   ) {
     if (!name || !email || !password) {
       throw new InternalServerErrorException('Name, email, and password are required');
@@ -78,7 +81,7 @@ export class UsersService {
     const encryptedPassword = this.encryptPassword(password);
     const newReferralCode = this.generateReferralCode();
 
-    let referredByCode: string | null = null;
+    let finalReferredByCode: string | null = null;
 
     if (referralCode) {
       const referrerResult = await db
@@ -90,13 +93,27 @@ export class UsersService {
         throw new NotFoundException(`Invalid referral code: ${referralCode}`);
       }
 
-      referredByCode = referrerResult[0].referral_code;
-      // Increment referralCount for the referrer
+      finalReferredByCode = referrerResult[0].referral_code;
+      // Increment referralCount for the referrer (ensure field name matches schema)
       const currentCount = referrerResult[0].referralCount || 0;
       await db
         .update(users)
         .set({ referralCount: currentCount + 1 })
+        .where(eq(users.referral_code, finalReferredByCode));
+    } else if (referredByCode) {
+      // If referredByCode is provided directly, increment referralCount for that code
+      const referrerResult = await db
+        .select()
+        .from(users)
         .where(eq(users.referral_code, referredByCode));
+      if (referrerResult && referrerResult.length > 0) {
+        const currentCount = referrerResult[0].referralCount || 0;
+        await db
+          .update(users)
+          .set({ referralCount: currentCount + 1 })
+          .where(eq(users.referral_code, referredByCode));
+      }
+      finalReferredByCode = referredByCode;
     }
 
     const result = await db
@@ -109,7 +126,10 @@ export class UsersService {
         mobileNumber,
         password_hash: encryptedPassword,
         referral_code: newReferralCode,
-        referred_by_code: referredByCode,
+        referred_by_code: finalReferredByCode,
+        payment_status: paymentStatus || 'PENDING',
+        reward: reward || '',
+        referralCount: referralCount || 0,
       })
       .returning();
 
@@ -124,10 +144,12 @@ export class UsersService {
         email: createdUser.email,
         mobileNumber: createdUser.mobileNumber,
         gender: createdUser.gender,
-        address:createdUser.address,
+        address: createdUser.address,
         referral_code: createdUser.referral_code,
-        referred_by: referredByCode,
+        referred_by: createdUser.referred_by_code,
         payment_status: createdUser.payment_status,
+        reward: createdUser.reward,
+        referralCount: createdUser.referralCount,
         created_at: createdUser.created_at,
       },
     };

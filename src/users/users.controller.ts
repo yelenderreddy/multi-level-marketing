@@ -26,9 +26,13 @@ export class UsersController {
       gender?: string;
       address?: string;
       referralCode?: string;
+      referredByCode?: string;
+      paymentStatus?: 'PENDING' | 'PAID';
+      reward?: string;
+      referralCount?: number;
     },
   ) {
-    const { name, email, password, mobileNumber,gender,address, referralCode } = body;
+    const { name, email, password, mobileNumber, gender, address, referralCode, referredByCode, paymentStatus, reward, referralCount } = body;
 
     if (!name || !email || !password) {
       throw new BadRequestException({
@@ -38,7 +42,7 @@ export class UsersController {
       });
     }
 
-    return this.usersService.createUser(name, email, password, mobileNumber, referralCode, gender, address);
+    return this.usersService.createUser(name, email, password, mobileNumber, referralCode, gender, address, referredByCode, paymentStatus, reward, referralCount);
   }
 
   @Get('/getUserById/:id')
