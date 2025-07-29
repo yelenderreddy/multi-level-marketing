@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
+
 @Controller('api/admin')
 export class AdminController {
   constructor(private readonly jwtService: JwtService, private readonly adminService: AdminService) {}
@@ -30,6 +30,7 @@ export class AdminController {
   }
 
   @Post('reward-target')
+  @UseGuards(JwtAuthGuard)
   async addRewardTarget(@Body() body: { referralCount: number; reward: string }) {
     const { referralCount, reward } = body;
     if (typeof referralCount !== 'number' || !reward) {
@@ -42,11 +43,13 @@ export class AdminController {
   }
 
   @Get('reward-targets')
+  @UseGuards(JwtAuthGuard)
   async getAllRewardTargets() {
     return this.adminService.getAllRewardTargets();
   }
 
   @Post('reward-target/update/:id')
+  @UseGuards(JwtAuthGuard)
   async updateRewardTarget(
     @Param('id') id: string,
     @Body() updates: Record<string, any>,
@@ -62,6 +65,7 @@ export class AdminController {
   }
 
   @Get('users-by-referral-count/:count')
+  @UseGuards(JwtAuthGuard)
   async getUsersByReferralCountWithReferred(
     @Param('count') count: string,
     @Body() body: { page?: number; pageSize?: number } = {},
@@ -78,6 +82,7 @@ export class AdminController {
   }
 
   @Post('approve-reward/:userId')
+  @UseGuards(JwtAuthGuard)
   async approveUserReward(
     @Param('userId') userId: string,
     @Body() body: { reward: string, status?: string },
