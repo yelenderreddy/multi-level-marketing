@@ -237,25 +237,11 @@ export class UsersService {
 
 async getReferralStats(referralCode: string) {
   const now = new Date();
-  const TIMEZONE = 'America/Los_Angeles';
-
-  // Get now in LA timezone
-  const nowInLA = toZonedTime(now, TIMEZONE);
-
-  // Start & end of today in LA
-  const startTodayInLA = startOfDay(nowInLA);
-  const endTodayInLA = endOfDay(nowInLA);
-
-  // Start & end of this month in LA
-  const startMonthInLA = startOfMonth(nowInLA);
-  const endMonthInLA = endOfMonth(nowInLA);
-
-  console.log({
-    startTodayInLA,
-    endTodayInLA,
-    startMonthInLA,
-    endMonthInLA
-  });
+  // Use UTC for today's referrals
+  const startTodayUTC = startOfDay(now);
+  const endTodayUTC = endOfDay(now);
+  const startMonthUTC = startOfMonth(now);
+  const endMonthUTC = endOfMonth(now);
 
   const todayUsers = await db
     .select()
@@ -263,8 +249,8 @@ async getReferralStats(referralCode: string) {
     .where(
       and(
         eq(users.referred_by_code, referralCode),
-        gte(users.created_at, startTodayInLA),
-        lte(users.created_at, endTodayInLA)
+        gte(users.created_at, startTodayUTC),
+        lte(users.created_at, endTodayUTC)
       )
     );
 
@@ -274,8 +260,8 @@ async getReferralStats(referralCode: string) {
     .where(
       and(
         eq(users.referred_by_code, referralCode),
-        gte(users.created_at, startMonthInLA),
-        lte(users.created_at, endMonthInLA)
+        gte(users.created_at, startMonthUTC),
+        lte(users.created_at, endMonthUTC)
       )
     );
 
