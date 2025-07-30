@@ -7,6 +7,9 @@ import {
   BadRequestException,
   HttpStatus,
   UseGuards,
+  Query,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -114,11 +117,16 @@ async updateUserDetails(
 
   @Get('/all')
   @UseGuards(JwtAuthGuard)
-  async getAllUsers() {
-    return this.usersService.getAllUsers();
+  async getAllUsers(
+    @Query('page') page = '1',
+    @Query('limit') limit = '10'
+  ) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    return this.usersService.getAllUsers(pageNum, limitNum);
   }
 
-  @Post('/delete/:id')
+  @Delete('/delete/:id')
   @UseGuards(JwtAuthGuard)
   async deleteUser(@Param('id') id: string) {
     const userId = parseInt(id, 10);

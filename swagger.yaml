@@ -26,12 +26,25 @@ components:
     Product:
       type: object
       properties:
+        id:
+          type: integer
         productName:
           type: string
+        productPrice:
+          type: integer
         productCount:
           type: integer
+        productStatus:
+          type: string
+          enum: [AVAILABLE, OUT_OF_STOCK, DISCONTINUED]
         productCode:
           type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Payment:
       type: object
       properties:
@@ -423,18 +436,84 @@ paths:
 
   /api/users/all:
     get:
-      summary: Get all users
+      summary: Get all users (paginated)
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          required: false
+          description: Page number (default 1)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          required: false
+          description: Number of users per page (default 10)
       responses:
         '200':
-          description: List of all users
+          description: Paginated list of users
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            email:
+                              type: string
+                            mobileNumber:
+                              type: string
+                            gender:
+                              type: string
+                            address:
+                              type: string
+                            referral_code:
+                              type: string
+                            referred_by_code:
+                              type: string
+                            payment_status:
+                              type: string
+                            reward:
+                              type: string
+                            referralCount:
+                              type: integer
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+                      total:
+                        type: integer
+                        description: Total number of users
+                      page:
+                        type: integer
+                        description: Current page number
+                      pageSize:
+                        type: integer
+                        description: Number of users per page
+                      totalPages:
+                        type: integer
+                        description: Total number of pages
   /api/admin/login:
     post:
       summary: Admin login

@@ -218,4 +218,28 @@ export class ProductService {
     }
   }
 
+  async deleteProduct(productId: number): Promise<{ statusCode: number; message: string; data?: any }> {
+    try {
+      // Check if product exists
+      const product = await db.select().from(products).where(eq(products.id, productId));
+      if (!product || product.length === 0) {
+        throw new NotFoundException('Product not found');
+      }
+
+      // Delete the product
+      const deletedRows = await db.delete(products).where(eq(products.id, productId)).returning();
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product deleted successfully',
+        data: deletedRows[0], // optional: return deleted product info
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to delete product',
+      );
+    }
+  }
+
 }

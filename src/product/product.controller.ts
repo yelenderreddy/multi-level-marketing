@@ -7,6 +7,7 @@ import {
   BadRequestException,
   UseGuards,
   Param,
+  Delete,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -115,4 +116,16 @@ async getOrderHistory(@Param('userId') userId: string) {
     return this.productService.updateProduct(productId, updates);
   }
 
+  @Delete('deleteProduct/:id')
+  async deleteProduct(@Param('id') id: string) {
+    const productId = parseInt(id, 10);
+    if (isNaN(productId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid product ID',
+        data: null,
+      });
+    }
+    return this.productService.deleteProduct(productId);
+  }
 }

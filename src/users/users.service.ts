@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { endOfMonth, startOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
 const TIMEZONE = 'America/Los_Angeles';
 
@@ -398,10 +398,24 @@ async updateUserDetails(
     };
   }
 
-  async getAllUsers() {
-    const allUsers = await db.select().from(users);
-    // Exclude password_hash from the returned data
-    return allUsers.map(({ password_hash, ...user }) => user);
+  async getAllUsers(page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+    const [allUsers, [{ count }]] = await Promise.all([
+      db.select().from(users).offset(offset).limit(limit),
+      db.select({ count: sql`count(*)` }).from(users),
+    ]);
+    const usersWithoutPassword = allUsers.map(({ password_hash, ...user }) => user);
+    return {
+      statusCode: 200,
+      message: 'Users fetched successfully',
+      data: {
+        users: usersWithoutPassword,
+        total: Number(count),
+        page,
+        pageSize: limit,
+        totalPages: Math.ceil(Number(count) / limit),
+      },
+    };
   }
 
 }
