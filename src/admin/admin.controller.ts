@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpStatus, UnauthorizedException, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, UnauthorizedException, Get, Param, UseGuards, Delete } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,18 +31,18 @@ export class AdminController {
 
   @Post('reward-target')
   @UseGuards(JwtAuthGuard)
-  async addRewardTarget(@Body() body: { referralCount: number; reward: string }) {
-    const { referralCount, reward } = body;
+  async addRewardTarget(@Body() body: { referralCount: number; reward: string,target:string }) {
+    const { referralCount, reward, target } = body;
     if (typeof referralCount !== 'number' || !reward) {
       throw new UnauthorizedException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'referralCount (number) and reward (string) are required',
       });
     }
-    return this.adminService.addRewardTarget(referralCount, reward);
+    return this.adminService.addRewardTarget(referralCount, reward, target);
   }
    
-  @Get('reward-targets')
+  @Get('getAll-reward-targets')
   @UseGuards(JwtAuthGuard)
   async getAllRewardTargets() {
     return this.adminService.getAllRewardTargets();
@@ -62,6 +62,21 @@ export class AdminController {
       });
     }
     return this.adminService.updateRewardTarget(targetId, updates);
+  }
+
+  @Delete('reward-target/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteRewardTarget(
+    @Param('id') id: string,
+  ) {
+    const targetId = parseInt(id, 10);
+    if (isNaN(targetId)) {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid reward target ID',
+      });
+    }
+    return this.adminService.deleteRewardTarget(targetId);
   }
 
   @Get('users-by-referral-count/:count')

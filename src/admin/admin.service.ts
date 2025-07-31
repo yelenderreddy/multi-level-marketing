@@ -7,9 +7,9 @@ import { and } from 'drizzle-orm';
 
 @Injectable()
 export class AdminService {
-  async addRewardTarget(referralCount: number, reward: string) {
+  async addRewardTarget(referralCount: number, reward: string, target:string) {
     try {
-      const result = await db.insert(rewardTargets).values({ referralCount, reward }).returning();
+      const result = await db.insert(rewardTargets).values({ referralCount, reward, target}).returning();
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Reward target added successfully',

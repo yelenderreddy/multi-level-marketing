@@ -1,1 +1,0 @@
-ALTER TABLE "products" ADD COLUMN "productCode" integer DEFAULT 0 NOT NULL;

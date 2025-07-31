@@ -16,6 +16,7 @@ CREATE TABLE "order_history" (
 	"product_id" integer NOT NULL,
 	"product_name" varchar(255) NOT NULL,
 	"quantity" integer DEFAULT 1 NOT NULL,
+	"status" varchar(32) DEFAULT 'confirmed' NOT NULL,
 	"ordered_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -38,6 +39,16 @@ CREATE TABLE "products" (
 	"productPrice" integer DEFAULT 0 NOT NULL,
 	"productCount" integer DEFAULT 0 NOT NULL,
 	"productStatus" "product_status" DEFAULT 'AVAILABLE' NOT NULL,
+	"productCode" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "reward_targets" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"referral_count" integer NOT NULL,
+	"reward" varchar(255) NOT NULL,
+	"target" varchar(255),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -52,6 +63,7 @@ CREATE TABLE "users" (
 	"password_hash" varchar(255) NOT NULL,
 	"referral_code" varchar(50) NOT NULL,
 	"referral_count" integer DEFAULT 0 NOT NULL,
+	"reward" varchar(255),
 	"referred_by_code" varchar(50),
 	"payment_status" "payment_status" DEFAULT 'PENDING' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -59,6 +71,15 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email"),
 	CONSTRAINT "users_mobile_number_unique" UNIQUE("mobile_number"),
 	CONSTRAINT "users_referral_code_unique" UNIQUE("referral_code")
+);
+--> statement-breakpoint
+CREATE TABLE "wishlist" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"product_id" integer NOT NULL,
+	"product_name" varchar(255) NOT NULL,
+	"productPrice" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "payments" ADD CONSTRAINT "payments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
