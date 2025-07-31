@@ -142,7 +142,54 @@ components:
           type: string
         referralCount:
           type: integer
+    WishlistItem:
+      type: object
+      properties:
+        wishlistId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        productId:
+          type: integer
+        productName:
+          type: string
+        productPrice:
+          type: integer
+        productStatus:
+          type: string
+        productDescription:
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        userEmail:
+          type: string
+    RazorpayOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        receipt:
+          type: string
+        status:
+          type: string
+        notes:
+          type: object
+          additionalProperties:
+            type: string
 paths:
+  /:
+    get:
+      summary: Root hello endpoint
+      responses:
+        '200':
+          description: Hello string
   /faq/createFaq:
     post:
       summary: Create a new FAQ
@@ -238,7 +285,16 @@ paths:
                 products:
                   type: array
                   items:
-                    $ref: '#/components/schemas/Product'
+                    type: object
+                    properties:
+                      productName:
+                        type: string
+                      productCount:
+                        type: integer
+                      productCode:
+                        type: integer
+                      productPrice:
+                        type: integer
       responses:
         '200':
           description: Products added
@@ -256,6 +312,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Product'
+  /product/{id}:
+    get:
+      summary: Get product by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
   /product/order:
     post:
       summary: Order a product
@@ -274,6 +348,7 @@ paths:
                   type: string
                 quantity:
                   type: integer
+                  default: 1
       responses:
         '200':
           description: Product ordered
@@ -291,6 +366,156 @@ paths:
       responses:
         '200':
           description: Order history
+  /product/order-status/{orderId}:
+    post:
+      summary: Update order status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: orderId
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Order status updated
+  /product/update/{id}:
+    post:
+      summary: Update a product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Product updated
+  /product/deleteProduct/{id}:
+    delete:
+      summary: Delete a product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Product deleted
+  /product/order-details/all:
+    get:
+      summary: Get all order details with user and product information
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          required: false
+          description: Page number (default 1)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          required: false
+          description: Number of orders per page (default 10)
+      responses:
+        '200':
+          description: List of all order details with user and product information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            userId:
+                              type: integer
+                            productId:
+                              type: integer
+                            productName:
+                              type: string
+                            quantity:
+                              type: integer
+                            status:
+                              type: string
+                            orderedAt:
+                              type: string
+                              format: date-time
+                            userName:
+                              type: string
+                            userEmail:
+                              type: string
+                            userMobile:
+                              type: string
+                            userAddress:
+                              type: string
+                            userGender:
+                              type: string
+                            userReferralCode:
+                              type: string
+                            userPaymentStatus:
+                              type: string
+                            productPrice:
+                              type: integer
+                            productCount:
+                              type: integer
+                            productStatus:
+                              type: string
+                            productCode:
+                              type: integer
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          total:
+                            type: integer
+                          totalPages:
+                            type: integer
+                          hasNext:
+                            type: boolean
+                          hasPrev:
+                            type: boolean
   /api/payments/create-order:
     post:
       summary: Create a Razorpay order
@@ -314,6 +539,17 @@ paths:
       responses:
         '201':
           description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/RazorpayOrder'
   /api/payments/webhook:
     post:
       summary: Razorpay webhook
@@ -334,7 +570,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                mobileNumber:
+                  type: string
+                gender:
+                  type: string
+                address:
+                  type: string
+                referralCode:
+                  type: string
+                referredByCode:
+                  type: string
+                paymentStatus:
+                  type: string
+                  enum: [PENDING, PAID]
+                reward:
+                  type: string
+                referralCount:
+                  type: integer
       responses:
         '200':
           description: User created
@@ -433,7 +693,43 @@ paths:
       responses:
         '200':
           description: User updated
-
+  /api/users/delete/{id}:
+    post:
+      summary: Delete user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: User deleted
+  /api/users/updatePassword/{id}:
+    post:
+      summary: Update user password
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password updated
   /api/users/all:
     get:
       summary: Get all users (paginated)
@@ -662,46 +958,6 @@ paths:
       responses:
         '200':
           description: Reward status updated for user
-  /product/update/{id}:
-    post:
-      summary: Update a product
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: integer
-          required: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        '200':
-          description: Product updated
-  /product/order-status/{orderId}:
-    post:
-      summary: Update order status
-      parameters:
-        - in: path
-          name: orderId
-          schema:
-            type: integer
-          required: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-      responses:
-        '200':
-          description: Order status updated
   /wishlist/add/{userId}:
     post:
       summary: Add a product to user's wishlist
@@ -728,7 +984,6 @@ paths:
       responses:
         '200':
           description: Product added to wishlist
-
   /wishlist/{userId}:
     get:
       summary: Get all wishlist items for a user
@@ -746,32 +1001,4 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    wishlistId:
-                      type: integer
-                    createdAt:
-                      type: string
-                      format: date-time
-                    productId:
-                      type: integer
-                    productName:
-                      type: string
-                    productPrice:
-                      type: integer
-                    productStatus:
-                      type: string
-                    productDescription:
-                      type: string
-                    userId:
-                      type: integer
-                    userName:
-                      type: string
-                    userEmail:
-                      type: string
-  /:
-    get:
-      summary: Root hello endpoint
-      responses:
-        '200':
-          description: Hello string
+                  $ref: '#/components/schemas/WishlistItem'

@@ -8,6 +8,8 @@ import {
   UseGuards,
   Param,
   Delete,
+  Query,
+  Put,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -76,7 +78,7 @@ async getOrderHistory(@Param('userId') userId: string) {
   return this.productService.getOrderHistory(id);
 }
 
-  @Post('/order-status/:orderId')
+  @Put('/order-status/:orderId')
   async updateOrderStatus(
     @Param('orderId') orderId: string,
     @Body() body: { status: string },
@@ -100,7 +102,7 @@ async getOrderHistory(@Param('userId') userId: string) {
     return this.productService.updateOrderStatus(id, status);
   }
 
-  @Post('/update/:id')
+  @Put('/update/:id')
   async updateProduct(
     @Param('id') id: string,
     @Body() updates: Record<string, any>,
@@ -127,5 +129,15 @@ async getOrderHistory(@Param('userId') userId: string) {
       });
     }
     return this.productService.deleteProduct(productId);
+  }
+
+  @Get('/order-details/all')
+  async getAllOrderDetails(
+    @Query('page') page = '1',
+    @Query('limit') limit = '10'
+  ) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    return this.productService.getAllOrderDetails(pageNum, limitNum);
   }
 }

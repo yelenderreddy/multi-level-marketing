@@ -8,8 +8,6 @@ import {
   HttpStatus,
   UseGuards,
   Query,
-  Put,
-  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -126,7 +124,7 @@ async updateUserDetails(
     return this.usersService.getAllUsers(pageNum, limitNum);
   }
 
-  @Delete('/delete/:id')
+  @Post('/delete/:id')
   @UseGuards(JwtAuthGuard)
   async deleteUser(@Param('id') id: string) {
     const userId = parseInt(id, 10);

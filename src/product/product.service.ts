@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { products } from '../db/schemas/productSchema';
+import { users } from '../db/schemas/userSchema';
 import { desc, eq } from 'drizzle-orm';
 import { orderHistory } from 'src/db/schemas/orderHistorySchema';
 
@@ -238,6 +239,80 @@ export class ProductService {
       console.error(error);
       throw new InternalServerErrorException(
         error?.message || 'Failed to delete product',
+      );
+    }
+  }
+
+  // Get all order details with user and product details
+  async getAllOrderDetails(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ statusCode: number; message: string; data: any }> {
+    try {
+      const offset = (page - 1) * limit;
+
+      // Get total count
+      const totalCount = await db
+        .select({ count: orderHistory.id })
+        .from(orderHistory);
+
+      // Get paginated order details with user and product information
+      const result = await db
+        .select({
+          id: orderHistory.id,
+          userId: orderHistory.userId,
+          productId: orderHistory.productId,
+          productName: orderHistory.productName,
+          quantity: orderHistory.quantity,
+          status: orderHistory.status,
+          orderedAt: orderHistory.orderedAt,
+          // User details
+          userName: users.name,
+          userEmail: users.email,
+          userMobile: users.mobileNumber,
+          userAddress: users.address,
+          userGender: users.gender,
+          userReferralCode: users.referral_code,
+          userPaymentStatus: users.payment_status,
+          // Product details
+          productPrice: products.productPrice,
+          productCount: products.productCount,
+          productStatus: products.productStatus,
+          productCode: products.productCode,
+        })
+        .from(orderHistory)
+        .leftJoin(users, eq(orderHistory.userId, users.id))
+        .leftJoin(products, eq(orderHistory.productId, products.id))
+        .orderBy(desc(orderHistory.orderedAt))
+        .limit(limit)
+        .offset(offset);
+
+      if (!result || result.length === 0) {
+        throw new NotFoundException('No order history found');
+      }
+
+      const total = totalCount.length;
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Order details fetched successfully',
+        data: {
+          orders: result,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to fetch order details',
       );
     }
   }
