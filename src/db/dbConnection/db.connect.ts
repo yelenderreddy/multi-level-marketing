@@ -13,11 +13,11 @@ console.log('Connecting to DB:', {
 });
 
 const pool = new Pool({
-  host: process.env.HOST || 'localhost',
-  port: Number(process.env.PORT) || 5432,
-  user: process.env.USER || 'postgres',
-  password: process.env.PASSWORD || 'reddy',
-  database: process.env.DATABASE || 'MLM_Db', // Correct fallback
+  host: process.env.HOST,
+  port: Number(process.env.PORT),
+  user: process.env.USER,
+  password: process.env.PASSWORD,
+  database: process.env.DATABASE, // Correct fallback
 });
 
 export const db = drizzle(pool);

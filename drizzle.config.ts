@@ -1,10 +1,15 @@
 import { defineConfig } from "drizzle-kit";
+import dotenv from "dotenv";
+
+dotenv.config(); // Loads .env variables into process.env
+
+const { HOST, PORT, USER, PASSWORD, DATABASE } = process.env;
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/db/schemas", // Path to your schema file
-  out: "./drizzle", // Output directory for migrations
+  schema: "./src/db/schemas",
+  out: "./drizzle",
   dbCredentials: {
-    url: "postgresql://postgres:reddy@localhost:5432/MLM_Db", // Replace with your PostgreSQL connection string
+    url: `postgresql://${USER}:${PASSWORD}@${HOST}:${PORT}/${DATABASE}`,
   },
 });
