@@ -21,7 +21,15 @@ export class ProductController {
 
   @Post('/add-multiple')
   async addProducts(
-    @Body() body: { products: { productName: string; productCount: number;productCode:number;productPrice:number }[] },
+    @Body()
+    body: {
+      products: {
+        productName: string;
+        productCount: number;
+        productCode: number;
+        productPrice: number;
+      }[];
+    },
   ) {
     const { products } = body;
 
@@ -55,28 +63,30 @@ export class ProductController {
   }
 
   @Post('/order')
-async orderProduct(@Body() body: { userId: number, productName: string, quantity?: number }) {
-  const { userId, productName, quantity } = body;
+  async orderProduct(
+    @Body() body: { userId: number; productName: string; quantity?: number },
+  ) {
+    const { userId, productName, quantity } = body;
 
-  if (!userId || !productName) {
-    throw new BadRequestException({
-      statusCode: HttpStatus.BAD_REQUEST,
-      message: 'userId and productName are required',
-      data: null,
-    });
+    if (!userId || !productName) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'userId and productName are required',
+        data: null,
+      });
+    }
+
+    return this.productService.orderProduct(userId, productName, quantity || 1);
   }
+  @Get('/order-history/:userId')
+  async getOrderHistory(@Param('userId') userId: string) {
+    const id = parseInt(userId, 10);
+    if (isNaN(id)) {
+      throw new BadRequestException('Invalid userId');
+    }
 
-  return this.productService.orderProduct(userId, productName, quantity || 1);
-}
-@Get('/order-history/:userId')
-async getOrderHistory(@Param('userId') userId: string) {
-  const id = parseInt(userId, 10);
-  if (isNaN(id)) {
-    throw new BadRequestException('Invalid userId');
+    return this.productService.getOrderHistory(id);
   }
-
-  return this.productService.getOrderHistory(id);
-}
 
   @Put('/order-status/:orderId')
   async updateOrderStatus(
@@ -134,7 +144,7 @@ async getOrderHistory(@Param('userId') userId: string) {
   @Get('/order-details/all')
   async getAllOrderDetails(
     @Query('page') page = '1',
-    @Query('limit') limit = '10'
+    @Query('limit') limit = '10',
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 10);

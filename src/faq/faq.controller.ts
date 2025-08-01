@@ -20,7 +20,11 @@ export class FaqController {
   @Post('/createFaq')
   async createFaq(
     @Body()
-    body: { question: string; answer: string; category?: string },
+    body: {
+      question: string;
+      answer: string;
+      category?: string;
+    },
   ) {
     return this.faqService.createFaq(body);
   }

@@ -11,7 +11,11 @@ import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class FaqService {
-  async createFaq(dto: { question: string; answer: string; category?: string }) {
+  async createFaq(dto: {
+    question: string;
+    answer: string;
+    category?: string;
+  }) {
     try {
       const result = await db
         .insert(faqs)
@@ -28,7 +32,9 @@ export class FaqService {
         data: result[0],
       };
     } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to create FAQ');
+      throw new InternalServerErrorException(
+        err.message || 'Failed to create FAQ',
+      );
     }
   }
 
@@ -45,7 +51,9 @@ export class FaqService {
         data: result,
       };
     } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to fetch FAQs');
+      throw new InternalServerErrorException(
+        err.message || 'Failed to fetch FAQs',
+      );
     }
   }
 
@@ -79,7 +87,9 @@ export class FaqService {
         data: result[0],
       };
     } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to update FAQ');
+      throw new InternalServerErrorException(
+        err.message || 'Failed to update FAQ',
+      );
     }
   }
 
@@ -110,7 +120,9 @@ export class FaqService {
         data: result[0],
       };
     } catch (err) {
-      throw new InternalServerErrorException(err.message || 'Failed to delete FAQ');
+      throw new InternalServerErrorException(
+        err.message || 'Failed to delete FAQ',
+      );
     }
   }
 }

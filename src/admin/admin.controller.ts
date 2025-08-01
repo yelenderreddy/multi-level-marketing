@@ -1,12 +1,24 @@
-import { Controller, Post, Body, HttpStatus, UnauthorizedException, Get, Param, UseGuards, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpStatus,
+  UnauthorizedException,
+  Get,
+  Param,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-
 @Controller('api/admin')
 export class AdminController {
-  constructor(private readonly jwtService: JwtService, private readonly adminService: AdminService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly adminService: AdminService,
+  ) {}
 
   @Post('login')
   async login(@Body() body: { username: string; password: string }) {
@@ -31,7 +43,9 @@ export class AdminController {
 
   @Post('reward-target')
   @UseGuards(JwtAuthGuard)
-  async addRewardTarget(@Body() body: { referralCount: number; reward: string,target:string }) {
+  async addRewardTarget(
+    @Body() body: { referralCount: number; reward: string; target: string },
+  ) {
     const { referralCount, reward, target } = body;
     if (typeof referralCount !== 'number' || !reward) {
       throw new UnauthorizedException({
@@ -41,7 +55,7 @@ export class AdminController {
     }
     return this.adminService.addRewardTarget(referralCount, reward, target);
   }
-   
+
   @Get('getAll-reward-targets')
   @UseGuards(JwtAuthGuard)
   async getAllRewardTargets() {
@@ -66,9 +80,7 @@ export class AdminController {
 
   @Delete('reward-target/:id')
   @UseGuards(JwtAuthGuard)
-  async deleteRewardTarget(
-    @Param('id') id: string,
-  ) {
+  async deleteRewardTarget(@Param('id') id: string) {
     const targetId = parseInt(id, 10);
     if (isNaN(targetId)) {
       throw new UnauthorizedException({
@@ -93,14 +105,18 @@ export class AdminController {
       });
     }
     const { page = 1, pageSize = 10 } = body || {};
-    return this.adminService.getUsersByReferralCountWithReferred(referralCount, page, pageSize);
+    return this.adminService.getUsersByReferralCountWithReferred(
+      referralCount,
+      page,
+      pageSize,
+    );
   }
 
   @Post('approve-reward/:userId')
   @UseGuards(JwtAuthGuard)
   async approveUserReward(
     @Param('userId') userId: string,
-    @Body() body: { reward: string, status?: string },
+    @Body() body: { reward: string; status?: string },
   ) {
     const id = parseInt(userId, 10);
     if (isNaN(id)) {
@@ -118,4 +134,4 @@ export class AdminController {
     }
     return this.adminService.approveUserReward(id, reward, status);
   }
-} 
+}

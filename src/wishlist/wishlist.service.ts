@@ -10,12 +10,15 @@ export class WishlistService {
   // Add logic to handle wishlist operations
   async addToWishlist(userId: number, product: any) {
     // Insert product details and userId into wishlist table
-    const result = await db.insert(wishlist).values({
-      userId,
-      productId: product.id,
-      productName: product.productName,
-      productPrice: product.productPrice || '',
-    }).returning();
+    const result = await db
+      .insert(wishlist)
+      .values({
+        userId,
+        productId: product.id,
+        productName: product.productName,
+        productPrice: product.productPrice || '',
+      })
+      .returning();
     return result;
   }
 

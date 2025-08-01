@@ -33,7 +33,19 @@ export class UsersController {
       referralCount?: number;
     },
   ) {
-    const { name, email, password, mobileNumber, gender, address, referralCode, referredByCode, paymentStatus, reward, referralCount } = body;
+    const {
+      name,
+      email,
+      password,
+      mobileNumber,
+      gender,
+      address,
+      referralCode,
+      referredByCode,
+      paymentStatus,
+      reward,
+      referralCount,
+    } = body;
 
     if (!name || !email || !password) {
       throw new BadRequestException({
@@ -43,7 +55,19 @@ export class UsersController {
       });
     }
 
-    return this.usersService.createUser(name, email, password, mobileNumber, referralCode, gender, address, referredByCode, paymentStatus, reward, referralCount);
+    return this.usersService.createUser(
+      name,
+      email,
+      password,
+      mobileNumber,
+      referralCode,
+      gender,
+      address,
+      referredByCode,
+      paymentStatus,
+      reward,
+      referralCount,
+    );
   }
 
   @Get('/getUserById/:id')
@@ -63,9 +87,7 @@ export class UsersController {
   }
 
   @Post('/login')
-  async loginUser(
-    @Body() body: { email: string; password: string },
-  ) {
+  async loginUser(@Body() body: { email: string; password: string }) {
     const { email, password } = body;
     if (!email || !password) {
       throw new BadRequestException({
@@ -89,36 +111,33 @@ export class UsersController {
     return this.usersService.getReferralStats(referralCode);
   }
   @Post('/updateUser/:id')
-@UseGuards(JwtAuthGuard)
-async updateUserDetails(
-  @Param('id') id: string,
-  @Body()
-  body: {
-    address?: string;
-    gender?: string;
-    referral_code?: string;
-    referred_by_code?: string;
-    payment_status?: 'PENDING' | 'PAID';
-  },
-) {
-  const userId = parseInt(id, 10);
-  if (isNaN(userId)) {
-    throw new BadRequestException({
-      statusCode: HttpStatus.BAD_REQUEST,
-      message: 'Invalid user ID',
-      data: null,
-    });
-  }
+  @UseGuards(JwtAuthGuard)
+  async updateUserDetails(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      address?: string;
+      gender?: string;
+      referral_code?: string;
+      referred_by_code?: string;
+      payment_status?: 'PENDING' | 'PAID';
+    },
+  ) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+        data: null,
+      });
+    }
 
-  return this.usersService.updateUserDetails(userId, body);
-}
+    return this.usersService.updateUserDetails(userId, body);
+  }
 
   @Get('/all')
   @UseGuards(JwtAuthGuard)
-  async getAllUsers(
-    @Query('page') page = '1',
-    @Query('limit') limit = '10'
-  ) {
+  async getAllUsers(@Query('page') page = '1', @Query('limit') limit = '10') {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 10);
     return this.usersService.getAllUsers(pageNum, limitNum);
@@ -156,4 +175,39 @@ async updateUserDetails(
     return this.usersService.updateUserPassword(userId, newPassword);
   }
 
+  @Post('/updateWalletBalance/:id')
+  @UseGuards(JwtAuthGuard)
+  async updateWalletBalance(@Param('id') id: string) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+        data: null,
+      });
+    }
+    return this.usersService.updateWalletBalance(userId);
+  }
+
+  @Post('/updateWalletBalanceByReferralCode/:referralCode')
+  @UseGuards(JwtAuthGuard)
+  async updateWalletBalanceByReferralCode(
+    @Param('referralCode') referralCode: string,
+  ) {
+    return this.usersService.updateWalletBalanceByReferralCode(referralCode);
+  }
+
+  @Get('/walletBalance/:id')
+  @UseGuards(JwtAuthGuard)
+  async getWalletBalance(@Param('id') id: string) {
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid user ID',
+        data: null,
+      });
+    }
+    return this.usersService.getWalletBalance(userId);
+  }
 }

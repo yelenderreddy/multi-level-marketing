@@ -1,5 +1,9 @@
 // razorpay.service.ts
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import Razorpay from 'razorpay';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
@@ -18,7 +22,8 @@ export class RazorpayService {
       key_secret: this.configService.get<string>('RAZORPAY_KEY_SECRET'),
     });
 
-    this.webhookSecret = this.configService.get<string>('RAZORPAY_WEBHOOK_SECRET') || '';
+    this.webhookSecret =
+      this.configService.get<string>('RAZORPAY_WEBHOOK_SECRET') || '';
   }
 
   /**

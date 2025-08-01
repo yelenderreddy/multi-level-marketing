@@ -19,7 +19,9 @@ export const paymentStatusEnum = pgEnum('payment_status', [
 export const payments = pgTable('payments', {
   id: serial('id').primaryKey().notNull(),
 
-  user_id: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }), // FK to users.id
+  user_id: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }), // FK to users.id
 
   order_id: varchar('order_id', { length: 255 }).notNull(), // Razorpay order id
 
@@ -33,7 +35,11 @@ export const payments = pgTable('payments', {
 
   receipt: varchar('receipt', { length: 255 }), // optional
 
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  created_at: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });

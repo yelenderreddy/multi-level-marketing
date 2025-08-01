@@ -15,16 +15,33 @@ import { orderHistory } from 'src/db/schemas/orderHistorySchema';
 export class ProductService {
   //add products
   async addProducts(
-    productList: { productName: string; productCount: number;productCode:number;productPrice:number }[],
+    productList: {
+      productName: string;
+      productCount: number;
+      productCode: number;
+      productPrice: number;
+    }[],
   ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
-      if (!productList || !Array.isArray(productList) || productList.length === 0) {
-        throw new HttpException('Products array is required', HttpStatus.BAD_REQUEST);
+      if (
+        !productList ||
+        !Array.isArray(productList) ||
+        productList.length === 0
+      ) {
+        throw new HttpException(
+          'Products array is required',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Validate each product
       for (const p of productList) {
-        if (!p.productName || p.productCount < 0 || !p.productCode  || !p.productPrice) {
+        if (
+          !p.productName ||
+          p.productCount < 0 ||
+          !p.productCode ||
+          !p.productPrice
+        ) {
           throw new HttpException(
             'Invalid productName or productCount or productCode or productPricein one or more products',
             HttpStatus.BAD_REQUEST,
@@ -32,10 +49,7 @@ export class ProductService {
         }
       }
 
-      const result = await db
-        .insert(products)
-        .values(productList)
-        .returning();
+      const result = await db.insert(products).values(productList).returning();
 
       return {
         statusCode: HttpStatus.CREATED,
@@ -52,7 +66,11 @@ export class ProductService {
   }
 
   //get all products
-  async getAllProducts(): Promise<{ statusCode: number; message: string; data: any[] }> {
+  async getAllProducts(): Promise<{
+    statusCode: number;
+    message: string;
+    data: any[];
+  }> {
     try {
       const result = await db
         .select()
@@ -78,81 +96,84 @@ export class ProductService {
 
   //order product
   async orderProduct(
-  userId: number,
-  productName: string,
-  quantity: number = 1,
-): Promise<{ statusCode: number; message: string; data?: any }> {
-  try {
-    if (!productName || !userId) {
-      throw new HttpException('Product name and userId are required', HttpStatus.BAD_REQUEST);
-    }
+    userId: number,
+    productName: string,
+    quantity: number = 1,
+  ): Promise<{ statusCode: number; message: string; data?: any }> {
+    try {
+      if (!productName || !userId) {
+        throw new HttpException(
+          'Product name and userId are required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    const result = await db
-      .select()
-      .from(products)
-      .where(eq(products.productName, productName));
+      const result = await db
+        .select()
+        .from(products)
+        .where(eq(products.productName, productName));
 
-    if (!result || result.length === 0) {
-      throw new NotFoundException(`Product "${productName}" not found`);
-    }
+      if (!result || result.length === 0) {
+        throw new NotFoundException(`Product "${productName}" not found`);
+      }
 
-    const product = result[0];
+      const product = result[0];
 
-    if (product.productCount < quantity) {
-      throw new HttpException(
-        `Only ${product.productCount} units of "${productName}" are available`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      if (product.productCount < quantity) {
+        throw new HttpException(
+          `Only ${product.productCount} units of "${productName}" are available`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // decrement the count
-    await db
-      .update(products)
-      .set({ productCount: product.productCount - quantity })
-      .where(eq(products.id, product.id));
+      // decrement the count
+      await db
+        .update(products)
+        .set({ productCount: product.productCount - quantity })
+        .where(eq(products.id, product.id));
 
-    // record in order_history
-    await db.insert(orderHistory).values({
-      userId,
-      productId: product.id,
-      productName: product.productName,
-      quantity,
-      status: 'confirmed',
-    });
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: `Order placed for "${productName}"`,
-      data: {
+      // record in order_history
+      await db.insert(orderHistory).values({
+        userId,
         productId: product.id,
         productName: product.productName,
-        productPrice: product.productPrice,
-        orderedQuantity: quantity,
-        remainingStock: product.productCount - quantity,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    throw new InternalServerErrorException(
-      error?.message || 'Failed to order product',
-    );
+        quantity,
+        status: 'confirmed',
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: `Order placed for "${productName}"`,
+        data: {
+          productId: product.id,
+          productName: product.productName,
+          productPrice: product.productPrice,
+          orderedQuantity: quantity,
+          remainingStock: product.productCount - quantity,
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to order product',
+      );
+    }
   }
-}
 
   //get order history
   async getOrderHistory(userId: number) {
-  const orders = await db
-    .select()
-    .from(orderHistory)
-    .where(eq(orderHistory.userId, userId))
-    .orderBy(desc(orderHistory.orderedAt));
+    const orders = await db
+      .select()
+      .from(orderHistory)
+      .where(eq(orderHistory.userId, userId))
+      .orderBy(desc(orderHistory.orderedAt));
 
-  return {
-    statusCode: HttpStatus.OK,
-    message: `Order history for user ${userId}`,
-    data: orders,
-  };
-}
+    return {
+      statusCode: HttpStatus.OK,
+      message: `Order history for user ${userId}`,
+      data: orders,
+    };
+  }
 
   async updateOrderStatus(orderId: number, status: string) {
     try {
@@ -170,13 +191,20 @@ export class ProductService {
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to update order status');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to update order status',
+      );
     }
   }
 
-  async getProductById(productId: number): Promise<{ statusCode: number; message: string; data?: any }> {
+  async getProductById(
+    productId: number,
+  ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
-      const result = await db.select().from(products).where(eq(products.id, productId));
+      const result = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
       if (!result || result.length === 0) {
         throw new NotFoundException('Product not found');
       }
@@ -193,10 +221,16 @@ export class ProductService {
     }
   }
 
-  async updateProduct(productId: number, updates: Record<string, any>): Promise<{ statusCode: number; message: string; data?: any }> {
+  async updateProduct(
+    productId: number,
+    updates: Record<string, any>,
+  ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
       if (!updates || Object.keys(updates).length === 0) {
-        throw new HttpException('No update fields provided', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'No update fields provided',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       const result = await db
         .update(products)
@@ -219,16 +253,24 @@ export class ProductService {
     }
   }
 
-  async deleteProduct(productId: number): Promise<{ statusCode: number; message: string; data?: any }> {
+  async deleteProduct(
+    productId: number,
+  ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
       // Check if product exists
-      const product = await db.select().from(products).where(eq(products.id, productId));
+      const product = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
       if (!product || product.length === 0) {
         throw new NotFoundException('Product not found');
       }
 
       // Delete the product
-      const deletedRows = await db.delete(products).where(eq(products.id, productId)).returning();
+      const deletedRows = await db
+        .delete(products)
+        .where(eq(products.id, productId))
+        .returning();
 
       return {
         statusCode: HttpStatus.OK,
@@ -246,7 +288,7 @@ export class ProductService {
   // Get all order details with user and product details
   async getAllOrderDetails(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<{ statusCode: number; message: string; data: any }> {
     try {
       const offset = (page - 1) * limit;
@@ -316,5 +358,4 @@ export class ProductService {
       );
     }
   }
-
 }

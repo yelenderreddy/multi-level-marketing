@@ -6,10 +6,7 @@ export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
   @Post('add/:userId')
-  async addToWishlist(
-    @Param('userId') userId: number,
-    @Body() product: any
-  ) {
+  async addToWishlist(@Param('userId') userId: number, @Body() product: any) {
     return this.wishlistService.addToWishlist(userId, product);
   }
 

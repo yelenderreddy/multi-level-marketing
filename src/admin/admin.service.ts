@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, InternalServerErrorException, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { rewardTargets } from '../db/schemas/rewardTargetSchema';
 import { eq } from 'drizzle-orm';
@@ -7,16 +13,21 @@ import { and } from 'drizzle-orm';
 
 @Injectable()
 export class AdminService {
-  async addRewardTarget(referralCount: number, reward: string, target:string) {
+  async addRewardTarget(referralCount: number, reward: string, target: string) {
     try {
-      const result = await db.insert(rewardTargets).values({ referralCount, reward, target}).returning();
+      const result = await db
+        .insert(rewardTargets)
+        .values({ referralCount, reward, target })
+        .returning();
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Reward target added successfully',
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to add reward target');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to add reward target',
+      );
     }
   }
 
@@ -29,16 +40,25 @@ export class AdminService {
         data: result,
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to fetch reward targets');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to fetch reward targets',
+      );
     }
   }
 
   async updateRewardTarget(id: number, updates: Record<string, any>) {
     try {
       if (!updates || Object.keys(updates).length === 0) {
-        throw new HttpException('No update fields provided', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'No update fields provided',
+          HttpStatus.BAD_REQUEST,
+        );
       }
-      const result = await db.update(rewardTargets).set(updates).where(eq(rewardTargets.id, id)).returning();
+      const result = await db
+        .update(rewardTargets)
+        .set(updates)
+        .where(eq(rewardTargets.id, id))
+        .returning();
       if (!result || result.length === 0) {
         throw new NotFoundException('Reward target not found');
       }
@@ -48,13 +68,18 @@ export class AdminService {
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to update reward target');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to update reward target',
+      );
     }
   }
 
   async deleteRewardTarget(id: number) {
     try {
-      const result = await db.delete(rewardTargets).where(eq(rewardTargets.id, id)).returning();
+      const result = await db
+        .delete(rewardTargets)
+        .where(eq(rewardTargets.id, id))
+        .returning();
       if (!result || result.length === 0) {
         throw new NotFoundException('Reward target not found');
       }
@@ -64,11 +89,17 @@ export class AdminService {
         data: { id },
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to delete reward target');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to delete reward target',
+      );
     }
   }
 
-  async getUsersByReferralCountWithReferred(referralCount: number, page = 1, pageSize = 10) {
+  async getUsersByReferralCountWithReferred(
+    referralCount: number,
+    page = 1,
+    pageSize = 10,
+  ) {
     try {
       const offset = (page - 1) * pageSize;
       // Fetch users with the given referralCount
@@ -87,18 +118,21 @@ export class AdminService {
             .from(users)
             .where(eq(users.referred_by_code, user.referral_code));
           return { ...user, referredUsers: referred };
-        })
+        }),
       );
 
       return {
         statusCode: 200,
-        message: 'Users with referralCount and their referred users fetched successfully',
+        message:
+          'Users with referralCount and their referred users fetched successfully',
         data: results,
         page,
         pageSize,
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to fetch users by referralCount');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to fetch users by referralCount',
+      );
     }
   }
 
@@ -109,7 +143,10 @@ export class AdminService {
         rewardValue = 'approved';
       } else if (status && status.toLowerCase() === 'delivered') {
         // Fetch current reward value
-        const userResult = await db.select().from(users).where(eq(users.id, userId));
+        const userResult = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId));
         if (!userResult || userResult.length === 0) {
           throw new NotFoundException('User not found');
         }
@@ -134,7 +171,9 @@ export class AdminService {
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(error?.message || 'Failed to update reward status for user');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to update reward status for user',
+      );
     }
   }
-} 
+}

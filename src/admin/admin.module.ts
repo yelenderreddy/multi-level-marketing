@@ -12,11 +12,13 @@ import { AdminService } from './admin.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '1h' },
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN') || '1h',
+        },
       }),
     }),
   ],
   controllers: [AdminController],
   providers: [AdminService],
 })
-export class AdminModule {} 
+export class AdminModule {}

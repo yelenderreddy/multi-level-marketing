@@ -6,6 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [ConfigModule],
   controllers: [RazorpayController],
-  providers:[RazorpayService]
+  providers: [RazorpayService],
 })
 export class RazorpayModule {}

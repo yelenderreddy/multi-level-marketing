@@ -1,12 +1,5 @@
 // razorpay.controller.ts
-import {
-  Body,
-  Controller,
-  Post,
-  Req,
-  Res,
-  HttpStatus,
-} from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, HttpStatus } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -35,7 +28,7 @@ export class RazorpayController {
 
     if (!user_id || !amount) {
       return {
-        statusCode: HttpStatus.BAD_REQUEST,   
+        statusCode: HttpStatus.BAD_REQUEST,
         message: 'User ID and Amount are required',
         data: null,
       };
