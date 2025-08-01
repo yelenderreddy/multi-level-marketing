@@ -13,7 +13,7 @@ export class WishlistController {
     return this.wishlistService.addToWishlist(userId, product);
   }
 
-  @Get(':userId')
+  @Get('getWishListProducts/:userId')
   async getWishlist(@Param('userId') userId: number) {
     return this.wishlistService.getWishlistByUserId(userId);
   }

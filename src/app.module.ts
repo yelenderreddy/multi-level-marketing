@@ -10,6 +10,7 @@ import { ProductModule } from './product/product.module';
 import { FaqService } from './faq/faq.service';
 import { FaqModule } from './faq/faq.module';
 import { AdminModule } from './admin/admin.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AdminModule } from './admin/admin.module';
     ProductModule,
     FaqModule,
     AdminModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [AppService, ProductService, FaqService],
