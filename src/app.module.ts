@@ -5,7 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { RazorpayModule } from './razorpay/razorpay.module';
-import { ProductService } from './product/product.service';
+
 import { ProductModule } from './product/product.module';
 import { FaqService } from './faq/faq.service';
 import { FaqModule } from './faq/faq.module';
@@ -25,6 +25,6 @@ import { BankDetailsModule } from './bankDetails/bankDetails.module';
     BankDetailsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ProductService, FaqService],
+  providers: [AppService, FaqService],
 })
 export class AppModule {}

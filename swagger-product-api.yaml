@@ -1,0 +1,3637 @@
+openapi: 3.0.3
+info:
+  title: Multi-Level Marketing API
+  description: |
+    Complete API for multi-level marketing application with product management, user management, payments, and referral system.
+    
+    ## Features
+    - **Product Management**: CRUD operations with photo upload
+    - **User Management**: Registration, authentication, profile management
+    - **Payment Integration**: Razorpay payment processing
+    - **Referral System**: User referrals and rewards
+    - **Admin Panel**: Admin operations and reward management
+    - **FAQ Management**: FAQ CRUD operations
+    - **Bank Details**: User bank information management
+    - **Wishlist**: User wishlist functionality
+    - **File Upload**: Image upload with validation
+    
+    ## File Upload
+    - Supported formats: jpg, jpeg, png, gif, webp
+    - Maximum file size: 5MB
+    - Files stored in `/uploads/` directory
+    - Accessible via: `http://localhost:3000/uploads/filename`
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include your token in the Authorization header:
+    ```
+    Authorization: Bearer your-jwt-token-here
+    ```
+    
+    ## Admin Access
+    Admin endpoints require admin JWT token. Login with:
+    - Username: `admin`
+    - Password: `admin123`
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://your-domain.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /product/all:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieve all products with their photo URLs. This endpoint is public and doesn't require authentication.
+      operationId: getAllProducts
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Products fetched successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '404':
+          description: No products found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Retrieve a specific product by its ID with photo URL. This endpoint is public and doesn't require authentication.
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Product fetched successfully"
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid product ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/add-with-photo:
+    post:
+      tags:
+        - Products
+      summary: Add product with photo
+      description: |
+        Create a new product with optional photo upload.
+        
+        **File Requirements:**
+        - Supported formats: jpg, jpeg, png, gif, webp
+        - Maximum size: 5MB
+        - Field name: `photo`
+        
+        **Authentication Required**
+      operationId: addProductWithPhoto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - productName
+                - productCount
+                - productCode
+                - productPrice
+              properties:
+                productName:
+                  type: string
+                  description: Name of the product
+                  example: "Premium Product"
+                productCount:
+                  type: integer
+                  minimum: 0
+                  description: Available quantity
+                  example: 50
+                productCode:
+                  type: integer
+                  description: Unique product code
+                  example: 12345
+                productPrice:
+                  type: integer
+                  minimum: 0
+                  description: Product price in cents/smallest currency unit
+                  example: 1000
+                description:
+                  type: string
+                  description: Product description (optional)
+                  example: "High-quality product with amazing features"
+                photo:
+                  type: string
+                  format: binary
+                  description: Product image file (optional)
+            encoding:
+              photo:
+                contentType: image/jpeg, image/png, image/gif, image/webp
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Product created successfully"
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request - invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/add-multiple:
+    post:
+      tags:
+        - Products
+      summary: Add multiple products
+      description: Create multiple products without photos. **Authentication Required**
+      operationId: addMultipleProducts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - products
+              properties:
+                products:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/ProductInput'
+            example:
+              products:
+                - productName: "Product 1"
+                  productCount: 10
+                  productCode: 12345
+                  productPrice: 1000
+                  description: "Product description"
+                - productName: "Product 2"
+                  productCount: 20
+                  productCode: 12346
+                  productPrice: 1500
+                  description: "Another product"
+      responses:
+        '201':
+          description: Products created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Products created successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request - invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/update/{id}:
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Update an existing product's details. **Authentication Required**
+      operationId: updateProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                  description: Updated product name
+                  example: "Updated Product Name"
+                productCount:
+                  type: integer
+                  minimum: 0
+                  description: Updated available quantity
+                  example: 75
+                productCode:
+                  type: integer
+                  description: Updated product code
+                  example: 12345
+                productPrice:
+                  type: integer
+                  minimum: 0
+                  description: Updated product price
+                  example: 1500
+                description:
+                  type: string
+                  description: Updated product description
+                  example: "Updated description"
+            example:
+              productName: "Updated Product Name"
+              productPrice: 1500
+              productCount: 75
+              description: "Updated description"
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Product updated successfully"
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request - invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/deleteProduct/{id}:
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Delete a product and its associated photo file. **Authentication Required**
+      operationId: deleteProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Product deleted successfully"
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request - invalid product ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/order:
+    post:
+      tags:
+        - Orders
+      summary: Order product
+      description: Place an order for a product. **Authentication Required**
+      operationId: orderProduct
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - productName
+              properties:
+                userId:
+                  type: integer
+                  description: User ID placing the order
+                  example: 1
+                productName:
+                  type: string
+                  description: Name of the product to order
+                  example: "Premium Product"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                  description: Quantity to order
+                  example: 2
+            example:
+              userId: 1
+              productName: "Premium Product"
+              quantity: 2
+      responses:
+        '200':
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Order placed for \"Premium Product\""
+                  data:
+                    type: object
+                    properties:
+                      productId:
+                        type: integer
+                        example: 1
+                      productName:
+                        type: string
+                        example: "Premium Product"
+                      productPrice:
+                        type: integer
+                        example: 1000
+                      orderedQuantity:
+                        type: integer
+                        example: 2
+                      remainingStock:
+                        type: integer
+                        example: 48
+        '400':
+          description: Bad request - invalid data or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/order-history/{userId}:
+    get:
+      tags:
+        - Orders
+      summary: Get order history
+      description: Retrieve order history for a specific user. **Authentication Required**
+      operationId: getOrderHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Order history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Order history for user 1"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/order-status/{orderId}:
+    put:
+      tags:
+        - Orders
+      summary: Update order status
+      description: Update the status of an order. **Authentication Required**
+      operationId: updateOrderStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  description: New order status
+                  example: "shipped"
+            example:
+              status: "shipped"
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Order status updated successfully"
+                  data:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request - invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /product/order-details/all:
+    get:
+      tags:
+        - Orders
+      summary: Get all order details
+      description: Retrieve all order details with pagination. **Authentication Required**
+      operationId: getAllOrderDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (default: 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Items per page (default: 10)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Order details fetched successfully"
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OrderDetail'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No order history found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /api/users/createUsers:
+    post:
+      tags:
+        - Users
+      summary: Create new user
+      description: Register a new user in the system
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  description: User's full name
+                  example: "John Doe"
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "john@example.com"
+                password:
+                  type: string
+                  description: User's password
+                  example: "password123"
+                mobileNumber:
+                  type: string
+                  description: User's mobile number
+                  example: "+1234567890"
+                gender:
+                  type: string
+                  enum: [Male, Female, Other]
+                  description: User's gender
+                  example: "Male"
+                address:
+                  type: string
+                  description: User's address
+                  example: "123 Main St, City, Country"
+                referralCode:
+                  type: string
+                  description: User's referral code
+                  example: "REF123"
+                referredByCode:
+                  type: string
+                  description: Referral code of the user who referred this user
+                  example: "REF456"
+                paymentStatus:
+                  type: string
+                  enum: [PENDING, PAID]
+                  default: PENDING
+                  description: User's payment status
+                  example: "PENDING"
+                reward:
+                  type: string
+                  description: User's reward
+                  example: "₹100"
+                referralCount:
+                  type: integer
+                  default: 0
+                  description: Number of users referred
+                  example: 0
+            example:
+              name: "John Doe"
+              email: "john@example.com"
+              password: "password123"
+              mobileNumber: "+1234567890"
+              gender: "Male"
+              address: "123 Main St, City, Country"
+              referralCode: "REF123"
+              referredByCode: "REF456"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/login:
+    post:
+      tags:
+        - Users
+      summary: User login
+      description: Authenticate user and get JWT token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "john@example.com"
+                password:
+                  type: string
+                  description: User's password
+                  example: "password123"
+            example:
+              email: "john@example.com"
+              password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Login successful"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                        description: JWT authentication token
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Bad request - missing email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/getUserById/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Retrieve user details by ID. **Authentication Required**
+      operationId: getUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/all:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Retrieve all users with pagination. **Authentication Required**
+      operationId: getAllUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (default: 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Items per page (default: 10)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/updateUser/{id}:
+    post:
+      tags:
+        - Users
+      summary: Update user details
+      description: Update user profile information. **Authentication Required**
+      operationId: updateUserDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: string
+                  description: User's address
+                  example: "456 New St, City, Country"
+                gender:
+                  type: string
+                  enum: [Male, Female, Other]
+                  description: User's gender
+                  example: "Male"
+                referral_code:
+                  type: string
+                  description: User's referral code
+                  example: "REF123"
+                referred_by_code:
+                  type: string
+                  description: Referral code of the user who referred this user
+                  example: "REF456"
+                payment_status:
+                  type: string
+                  enum: [PENDING, PAID]
+                  description: User's payment status
+                  example: "PAID"
+            example:
+              address: "456 New St, City, Country"
+              gender: "Male"
+              payment_status: "PAID"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User updated successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/updatePassword/{id}:
+    post:
+      tags:
+        - Users
+      summary: Update user password
+      description: Update user's password. **Authentication Required**
+      operationId: updateUserPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newPassword
+              properties:
+                newPassword:
+                  type: string
+                  description: New password
+                  example: "newpassword123"
+            example:
+              newPassword: "newpassword123"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Password updated successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/delete/{id}:
+    post:
+      tags:
+        - Users
+      summary: Delete user
+      description: Delete a user by ID. **Authentication Required**
+      operationId: deleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/referredBy/{referralCode}:
+    get:
+      tags:
+        - Users
+      summary: Get users referred by referral code
+      description: Get all users who were referred by a specific referral code. **Authentication Required**
+      operationId: getUsersReferredBy
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralCode
+          in: path
+          required: true
+          description: Referral code
+          schema:
+            type: string
+          example: "REF123"
+      responses:
+        '200':
+          description: Referred users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Referred users retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/referral-stats/{referralCode}:
+    get:
+      tags:
+        - Users
+      summary: Get referral statistics
+      description: Get referral statistics for a specific referral code. **Authentication Required**
+      operationId: getReferralStats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralCode
+          in: path
+          required: true
+          description: Referral code
+          schema:
+            type: string
+          example: "REF123"
+      responses:
+        '200':
+          description: Referral statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Referral statistics retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      referralCode:
+                        type: string
+                        example: "REF123"
+                      totalReferred:
+                        type: integer
+                        example: 5
+                      totalEarnings:
+                        type: number
+                        example: 500.00
+                      pendingRewards:
+                        type: integer
+                        example: 2
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/updateWalletBalance/{id}:
+    post:
+      tags:
+        - Users
+      summary: Update wallet balance
+      description: Update user's wallet balance. **Authentication Required**
+      operationId: updateWalletBalance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Wallet balance updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Wallet balance updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: integer
+                        example: 1
+                      newBalance:
+                        type: number
+                        example: 150.00
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/updateWalletBalanceByReferralCode/{referralCode}:
+    post:
+      tags:
+        - Users
+      summary: Update wallet balance by referral code
+      description: Update wallet balance for user with specific referral code. **Authentication Required**
+      operationId: updateWalletBalanceByReferralCode
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralCode
+          in: path
+          required: true
+          description: Referral code
+          schema:
+            type: string
+          example: "REF123"
+      responses:
+        '200':
+          description: Wallet balance updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Wallet balance updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      referralCode:
+                        type: string
+                        example: "REF123"
+                      newBalance:
+                        type: number
+                        example: 200.00
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    /api/users/walletBalance/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get wallet balance
+      description: Get user's current wallet balance. **Authentication Required**
+      operationId: getWalletBalance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Wallet balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Wallet balance retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: integer
+                        example: 1
+                      balance:
+                        type: number
+                        example: 150.00
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # FAQ Management Endpoints
+  /faq/createFaq:
+    post:
+      tags:
+        - FAQ
+      summary: Create FAQ
+      description: Create a new FAQ entry. **Authentication Required**
+      operationId: createFaq
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - question
+                - answer
+              properties:
+                question:
+                  type: string
+                  description: FAQ question
+                  example: "How do I create an account?"
+                answer:
+                  type: string
+                  description: FAQ answer
+                  example: "You can create an account by clicking the sign up button and filling in your details."
+                category:
+                  type: string
+                  description: FAQ category
+                  example: "Account"
+            example:
+              question: "How do I create an account?"
+              answer: "You can create an account by clicking the sign up button and filling in your details."
+              category: "Account"
+      responses:
+        '201':
+          description: FAQ created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "FAQ created successfully"
+                  data:
+                    $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /faq/getAllFaqs:
+    get:
+      tags:
+        - FAQ
+      summary: Get all FAQs
+      description: Retrieve all FAQ entries. This endpoint is public and doesn't require authentication.
+      operationId: getAllFaqs
+      responses:
+        '200':
+          description: FAQs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQs retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FAQ'
+        '404':
+          description: No FAQs found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /faq/updateFaq/{id}:
+    put:
+      tags:
+        - FAQ
+      summary: Update FAQ
+      description: Update an existing FAQ entry. **Authentication Required**
+      operationId: updateFaq
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: FAQ ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question:
+                  type: string
+                  description: Updated FAQ question
+                  example: "How do I reset my password?"
+                answer:
+                  type: string
+                  description: Updated FAQ answer
+                  example: "You can reset your password by clicking the forgot password link."
+                category:
+                  type: string
+                  description: Updated FAQ category
+                  example: "Security"
+            example:
+              question: "How do I reset my password?"
+              answer: "You can reset your password by clicking the forgot password link."
+              category: "Security"
+      responses:
+        '200':
+          description: FAQ updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ updated successfully"
+                  data:
+                    $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Bad request - invalid FAQ ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /faq/deleteFaq/{id}:
+    delete:
+      tags:
+        - FAQ
+      summary: Delete FAQ
+      description: Delete an FAQ entry. **Authentication Required**
+      operationId: deleteFaq
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: FAQ ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: FAQ deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ deleted successfully"
+                  data:
+                    $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Bad request - invalid FAQ ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Admin Management Endpoints
+  /api/admin/login:
+    post:
+      tags:
+        - Admin
+      summary: Admin login
+      description: Authenticate admin and get JWT token
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Admin username
+                  example: "admin"
+                password:
+                  type: string
+                  description: Admin password
+                  example: "admin123"
+            example:
+              username: "admin"
+              password: "admin123"
+      responses:
+        '200':
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "logged in successful"
+                  token:
+                    type: string
+                    description: JWT authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Unauthorized - invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/reward-target:
+    post:
+      tags:
+        - Admin
+      summary: Add reward target
+      description: Add a new reward target. **Admin Authentication Required**
+      operationId: addRewardTarget
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - referralCount
+                - reward
+              properties:
+                referralCount:
+                  type: integer
+                  description: Number of referrals required
+                  example: 5
+                reward:
+                  type: string
+                  description: Reward amount
+                  example: "₹100"
+                target:
+                  type: string
+                  description: Target description
+                  example: "Bronze Level"
+            example:
+              referralCount: 5
+              reward: "₹100"
+              target: "Bronze Level"
+      responses:
+        '201':
+          description: Reward target created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Reward target created successfully"
+                  data:
+                    $ref: '#/components/schemas/RewardTarget'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/getAll-reward-targets:
+    get:
+      tags:
+        - Admin
+      summary: Get all reward targets
+      description: Retrieve all reward targets. **Admin Authentication Required**
+      operationId: getAllRewardTargets
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reward targets retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Reward targets retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RewardTarget'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/reward-target/update/{id}:
+    post:
+      tags:
+        - Admin
+      summary: Update reward target
+      description: Update an existing reward target. **Admin Authentication Required**
+      operationId: updateRewardTarget
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Reward target ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                referralCount:
+                  type: integer
+                  description: Updated number of referrals required
+                  example: 10
+                reward:
+                  type: string
+                  description: Updated reward amount
+                  example: "₹200"
+                target:
+                  type: string
+                  description: Updated target description
+                  example: "Silver Level"
+            example:
+              referralCount: 10
+              reward: "₹200"
+              target: "Silver Level"
+      responses:
+        '200':
+          description: Reward target updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Reward target updated successfully"
+                  data:
+                    $ref: '#/components/schemas/RewardTarget'
+        '400':
+          description: Bad request - invalid reward target ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reward target not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/reward-target/{id}:
+    delete:
+      tags:
+        - Admin
+      summary: Delete reward target
+      description: Delete a reward target. **Admin Authentication Required**
+      operationId: deleteRewardTarget
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Reward target ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Reward target deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Reward target deleted successfully"
+                  data:
+                    $ref: '#/components/schemas/RewardTarget'
+        '400':
+          description: Bad request - invalid reward target ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reward target not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/users-by-referral-count/{count}:
+    get:
+      tags:
+        - Admin
+      summary: Get users by referral count
+      description: Get users with specific referral count and their referred users. **Admin Authentication Required**
+      operationId: getUsersByReferralCount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: count
+          in: path
+          required: true
+          description: Referral count
+          schema:
+            type: integer
+            minimum: 0
+          example: 5
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  type: integer
+                  default: 1
+                  description: Page number
+                  example: 1
+                pageSize:
+                  type: integer
+                  default: 10
+                  description: Items per page
+                  example: 10
+            example:
+              page: 1
+              pageSize: 10
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserWithReferred'
+        '400':
+          description: Bad request - invalid referral count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/approve-reward/{userId}:
+    post:
+      tags:
+        - Admin
+      summary: Approve user reward
+      description: Approve reward for a specific user. **Admin Authentication Required**
+      operationId: approveUserReward
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reward:
+                  type: string
+                  description: Reward amount
+                  example: "₹100"
+                status:
+                  type: string
+                  description: Reward status
+                  example: "APPROVED"
+            example:
+              reward: "₹100"
+              status: "APPROVED"
+      responses:
+        '200':
+          description: Reward approved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Reward approved successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request - invalid user ID or missing reward/status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Bank Details Endpoints
+  /api/bankDetails/getBankDetails/{userId}:
+    get:
+      tags:
+        - Bank Details
+      summary: Get bank details with user
+      description: Get bank details for a specific user. **Authentication Required**
+      operationId: getBankDetailsWithUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Bank details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Bank details retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/BankDetailsWithUser'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bank details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bankDetails/createBankDetails:
+    post:
+      tags:
+        - Bank Details
+      summary: Create bank details
+      description: Create new bank details for a user. **Authentication Required**
+      operationId: createBankDetails
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankDetailsDto'
+            example:
+              userId: 1
+              bankName: "State Bank of India"
+              accountNumber: "1234567890"
+              ifscCode: "SBIN0001234"
+              accountHolderName: "John Doe"
+      responses:
+        '201':
+          description: Bank details created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Bank details created successfully"
+                  data:
+                    $ref: '#/components/schemas/BankDetails'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - bank details already exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bankDetails/updateBankDetails:
+    put:
+      tags:
+        - Bank Details
+      summary: Update bank details
+      description: Update existing bank details. **Authentication Required**
+      operationId: updateBankDetails
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBankDetailsDto'
+            example:
+              userId: 1
+              bankName: "HDFC Bank"
+              accountNumber: "0987654321"
+              ifscCode: "HDFC0001234"
+              accountHolderName: "John Doe"
+      responses:
+        '200':
+          description: Bank details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Bank details updated successfully"
+                  data:
+                    $ref: '#/components/schemas/BankDetails'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bank details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bankDetails/deleteBankDetails:
+    delete:
+      tags:
+        - Bank Details
+      summary: Delete bank details
+      description: Delete bank details for a user. **Authentication Required**
+      operationId: deleteBankDetails
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: integer
+                  description: User ID
+                  example: 1
+            example:
+              userId: 1
+      responses:
+        '200':
+          description: Bank details deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Bank details deleted successfully"
+                  data:
+                    $ref: '#/components/schemas/BankDetails'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bank details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bankDetails/checkBankDetails:
+    get:
+      tags:
+        - Bank Details
+      summary: Check bank details existence
+      description: Check if bank details exist for a user. **Authentication Required**
+      operationId: checkBankDetailsExist
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Bank details existence checked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Bank details check completed"
+                  data:
+                    type: object
+                    properties:
+                      exists:
+                        type: boolean
+                        example: true
+                      bankDetails:
+                        $ref: '#/components/schemas/BankDetails'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bankDetails/validateBankDetails:
+    post:
+      tags:
+        - Bank Details
+      summary: Validate bank details
+      description: Validate bank details format without saving. **Authentication Required**
+      operationId: validateBankDetails
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankDetailsDto'
+            example:
+              userId: 1
+              bankName: "State Bank of India"
+              accountNumber: "1234567890"
+              ifscCode: "SBIN0001234"
+              accountHolderName: "John Doe"
+      responses:
+        '200':
+          description: Bank details validation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Bank details validation completed"
+                  data:
+                    type: object
+                    properties:
+                      isValid:
+                        type: boolean
+                        example: true
+                      errors:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Payment Endpoints
+  /api/payments/create-order:
+    post:
+      tags:
+        - Payments
+      summary: Create Razorpay order
+      description: Create a new Razorpay order and save it to database
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - amount
+              properties:
+                user_id:
+                  type: integer
+                  description: User ID
+                  example: 1
+                amount:
+                  type: integer
+                  description: Amount in paise (smallest currency unit)
+                  example: 100000
+                receipt:
+                  type: string
+                  description: Receipt ID
+                  example: "receipt_123"
+                notes:
+                  type: object
+                  description: Additional notes
+                  example:
+                    "description": "Product purchase"
+                    "customer_id": "123"
+            example:
+              user_id: 1
+              amount: 100000
+              receipt: "receipt_123"
+              notes:
+                description: "Product purchase"
+                customer_id: "123"
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Order created & saved successfully"
+                  data:
+                    $ref: '#/components/schemas/RazorpayOrder'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/webhook:
+    post:
+      tags:
+        - Payments
+      summary: Razorpay webhook
+      description: Handle Razorpay webhook events
+      operationId: handleWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  description: Webhook event type
+                  example: "payment.captured"
+                payload:
+                  type: object
+                  description: Webhook payload
+            example:
+              event: "payment.captured"
+              payload:
+                payment:
+                  entity:
+                    id: "pay_1234567890"
+                    order_id: "order_1234567890"
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Webhook received"
+        '400':
+          description: Bad request - invalid signature
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid signature"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Webhook secret is not configured"
+
+  # Wishlist Endpoints
+  /wishlist/add/{userId}:
+    post:
+      tags:
+        - Wishlist
+      summary: Add to wishlist
+      description: Add a product to user's wishlist
+      operationId: addToWishlist
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: integer
+                  description: Product ID
+                  example: 1
+                productName:
+                  type: string
+                  description: Product name
+                  example: "Premium Product"
+                productPrice:
+                  type: integer
+                  description: Product price
+                  example: 1000
+            example:
+              productId: 1
+              productName: "Premium Product"
+              productPrice: 1000
+      responses:
+        '201':
+          description: Product added to wishlist successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Product added to wishlist successfully"
+                  data:
+                    $ref: '#/components/schemas/WishlistItem'
+        '400':
+          description: Bad request - invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wishlist/getWishListProducts/{userId}:
+    get:
+      tags:
+        - Wishlist
+      summary: Get wishlist products
+      description: Get all products in user's wishlist
+      operationId: getWishlist
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Wishlist products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Wishlist products retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WishlistItem'
+        '400':
+          description: Bad request - invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Wishlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token for authentication. Include the token in the Authorization header:
+        ```
+        Authorization: Bearer your-jwt-token-here
+        ```
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique product identifier
+          example: 1
+        productName:
+          type: string
+          description: Name of the product
+          example: "Premium Product"
+        description:
+          type: string
+          nullable: true
+          description: Product description
+          example: "High-quality product with amazing features"
+        photo:
+          type: string
+          nullable: true
+          description: Filename of the uploaded photo
+          example: "1703123456789-123456789.jpg"
+        photoUrl:
+          type: string
+          nullable: true
+          description: Full URL to access the photo
+          example: "http://localhost:3000/uploads/1703123456789-123456789.jpg"
+        productPrice:
+          type: integer
+          description: Product price in cents/smallest currency unit
+          example: 1000
+        productCount:
+          type: integer
+          description: Available quantity
+          example: 50
+        productStatus:
+          type: string
+          enum: [AVAILABLE, OUT_OF_STOCK, DISCONTINUED]
+          description: Current status of the product
+          example: "AVAILABLE"
+        productCode:
+          type: integer
+          description: Unique product code
+          example: 12345
+        created_at:
+          type: string
+          format: date-time
+          description: Product creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Product last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - productName
+        - productPrice
+        - productCount
+        - productStatus
+        - productCode
+        - created_at
+        - updated_at
+
+    ProductInput:
+      type: object
+      properties:
+        productName:
+          type: string
+          description: Name of the product
+          example: "Premium Product"
+        productCount:
+          type: integer
+          minimum: 0
+          description: Available quantity
+          example: 50
+        productCode:
+          type: integer
+          description: Unique product code
+          example: 12345
+        productPrice:
+          type: integer
+          minimum: 0
+          description: Product price in cents/smallest currency unit
+          example: 1000
+        description:
+          type: string
+          nullable: true
+          description: Product description
+          example: "High-quality product with amazing features"
+      required:
+        - productName
+        - productCount
+        - productCode
+        - productPrice
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique order identifier
+          example: 1
+        userId:
+          type: integer
+          description: User ID who placed the order
+          example: 1
+        productId:
+          type: integer
+          description: Product ID that was ordered
+          example: 1
+        productName:
+          type: string
+          description: Name of the product
+          example: "Premium Product"
+        quantity:
+          type: integer
+          description: Quantity ordered
+          example: 2
+        status:
+          type: string
+          description: Current order status
+          example: "confirmed"
+        orderedAt:
+          type: string
+          format: date-time
+          description: Order timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - userId
+        - productId
+        - productName
+        - quantity
+        - status
+        - orderedAt
+
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Order ID
+          example: 1
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        productId:
+          type: integer
+          description: Product ID
+          example: 1
+        productName:
+          type: string
+          description: Product name
+          example: "Premium Product"
+        quantity:
+          type: integer
+          description: Quantity ordered
+          example: 2
+        status:
+          type: string
+          description: Order status
+          example: "confirmed"
+        orderedAt:
+          type: string
+          format: date-time
+          description: Order timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        userName:
+          type: string
+          description: User's name
+          example: "John Doe"
+        userEmail:
+          type: string
+          description: User's email
+          example: "john@example.com"
+        userMobile:
+          type: string
+          description: User's mobile number
+          example: "+1234567890"
+        userAddress:
+          type: string
+          nullable: true
+          description: User's address
+          example: "123 Main St, City, Country"
+        userGender:
+          type: string
+          nullable: true
+          description: User's gender
+          example: "Male"
+        userReferralCode:
+          type: string
+          description: User's referral code
+          example: "REF123"
+        userPaymentStatus:
+          type: string
+          description: User's payment status
+          example: "paid"
+        productPrice:
+          type: integer
+          description: Product price
+          example: 1000
+        productCount:
+          type: integer
+          description: Available product count
+          example: 48
+        productStatus:
+          type: string
+          description: Product status
+          example: "AVAILABLE"
+        productCode:
+          type: integer
+          description: Product code
+          example: 12345
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 10
+        total:
+          type: integer
+          description: Total number of items
+          example: 25
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 3
+        hasNext:
+          type: boolean
+          description: Whether there's a next page
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there's a previous page
+          example: false
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
+          type: string
+          description: Error message
+          example: "Invalid file type. Only image files are allowed!"
+        error:
+          type: string
+          description: Error type
+          example: "Bad Request"
+        data:
+          type: object
+          nullable: true
+          description: Additional error data
+          example: null
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 1
+        name:
+          type: string
+          description: User's full name
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "john@example.com"
+        mobileNumber:
+          type: string
+          description: User's mobile number
+          example: "+1234567890"
+        gender:
+          type: string
+          enum: [Male, Female, Other]
+          nullable: true
+          description: User's gender
+          example: "Male"
+        address:
+          type: string
+          nullable: true
+          description: User's address
+          example: "123 Main St, City, Country"
+        referralCode:
+          type: string
+          description: User's referral code
+          example: "REF123"
+        referredByCode:
+          type: string
+          nullable: true
+          description: Referral code of the user who referred this user
+          example: "REF456"
+        paymentStatus:
+          type: string
+          enum: [PENDING, PAID]
+          default: PENDING
+          description: User's payment status
+          example: "PENDING"
+        reward:
+          type: string
+          nullable: true
+          description: User's reward
+          example: "₹100"
+        referralCount:
+          type: integer
+          default: 0
+          description: Number of users referred
+          example: 0
+        walletBalance:
+          type: number
+          default: 0
+          description: User's wallet balance
+          example: 150.00
+        created_at:
+          type: string
+          format: date-time
+          description: User creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: User last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - name
+        - email
+        - mobileNumber
+        - referralCode
+        - paymentStatus
+        - referralCount
+        - walletBalance
+        - created_at
+        - updated_at
+
+    UserWithReferred:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+          example: 1
+        name:
+          type: string
+          description: User's name
+          example: "John Doe"
+        email:
+          type: string
+          description: User's email
+          example: "john@example.com"
+        referralCode:
+          type: string
+          description: User's referral code
+          example: "REF123"
+        referralCount:
+          type: integer
+          description: Number of referrals
+          example: 5
+        referredUsers:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          description: List of users referred by this user
+
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique FAQ identifier
+          example: 1
+        question:
+          type: string
+          description: FAQ question
+          example: "How do I create an account?"
+        answer:
+          type: string
+          description: FAQ answer
+          example: "You can create an account by clicking the sign up button and filling in your details."
+        category:
+          type: string
+          nullable: true
+          description: FAQ category
+          example: "Account"
+        created_at:
+          type: string
+          format: date-time
+          description: FAQ creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: FAQ last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - question
+        - answer
+        - created_at
+        - updated_at
+
+    RewardTarget:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique reward target identifier
+          example: 1
+        referralCount:
+          type: integer
+          description: Number of referrals required
+          example: 5
+        reward:
+          type: string
+          description: Reward amount
+          example: "₹100"
+        target:
+          type: string
+          nullable: true
+          description: Target description
+          example: "Bronze Level"
+        created_at:
+          type: string
+          format: date-time
+          description: Reward target creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Reward target last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - referralCount
+        - reward
+        - created_at
+        - updated_at
+
+    BankDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique bank details identifier
+          example: 1
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        bankName:
+          type: string
+          description: Bank name
+          example: "State Bank of India"
+        accountNumber:
+          type: string
+          description: Account number
+          example: "1234567890"
+        ifscCode:
+          type: string
+          description: IFSC code
+          example: "SBIN0001234"
+        accountHolderName:
+          type: string
+          description: Account holder name
+          example: "John Doe"
+        created_at:
+          type: string
+          format: date-time
+          description: Bank details creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Bank details last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - userId
+        - bankName
+        - accountNumber
+        - ifscCode
+        - accountHolderName
+        - created_at
+        - updated_at
+
+    BankDetailsWithUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Bank details ID
+          example: 1
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        bankName:
+          type: string
+          description: Bank name
+          example: "State Bank of India"
+        accountNumber:
+          type: string
+          description: Account number
+          example: "1234567890"
+        ifscCode:
+          type: string
+          description: IFSC code
+          example: "SBIN0001234"
+        accountHolderName:
+          type: string
+          description: Account holder name
+          example: "John Doe"
+        user:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+          description: Bank details creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Bank details last update timestamp
+          example: "2024-01-01T00:00:00.000Z"
+
+    CreateBankDetailsDto:
+      type: object
+      required:
+        - userId
+        - bankName
+        - accountNumber
+        - ifscCode
+        - accountHolderName
+      properties:
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        bankName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Bank name
+          example: "State Bank of India"
+        accountNumber:
+          type: string
+          pattern: '^[0-9]{9,18}$'
+          description: Account number (9-18 digits)
+          example: "1234567890"
+        ifscCode:
+          type: string
+          pattern: '^[A-Z]{4}0[A-Z0-9]{6}$'
+          description: IFSC code format
+          example: "SBIN0001234"
+        accountHolderName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Account holder name
+          example: "John Doe"
+
+    UpdateBankDetailsDto:
+      type: object
+      required:
+        - userId
+        - bankName
+        - accountNumber
+        - ifscCode
+        - accountHolderName
+      properties:
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        bankName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Bank name
+          example: "HDFC Bank"
+        accountNumber:
+          type: string
+          pattern: '^[0-9]{9,18}$'
+          description: Account number (9-18 digits)
+          example: "0987654321"
+        ifscCode:
+          type: string
+          pattern: '^[A-Z]{4}0[A-Z0-9]{6}$'
+          description: IFSC code format
+          example: "HDFC0001234"
+        accountHolderName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Account holder name
+          example: "John Doe"
+
+    RazorpayOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Razorpay order ID
+          example: "order_1234567890"
+        entity:
+          type: string
+          description: Entity type
+          example: "order"
+        amount:
+          type: integer
+          description: Amount in paise
+          example: 100000
+        amount_paid:
+          type: integer
+          description: Amount paid in paise
+          example: 0
+        amount_due:
+          type: integer
+          description: Amount due in paise
+          example: 100000
+        currency:
+          type: string
+          description: Currency code
+          example: "INR"
+        receipt:
+          type: string
+          description: Receipt ID
+          example: "receipt_123"
+        status:
+          type: string
+          description: Order status
+          example: "created"
+        attempts:
+          type: integer
+          description: Payment attempts
+          example: 0
+        notes:
+          type: object
+          description: Additional notes
+          example:
+            description: "Product purchase"
+            customer_id: "123"
+        created_at:
+          type: integer
+          description: Creation timestamp
+          example: 1640995200
+
+    WishlistItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique wishlist item identifier
+          example: 1
+        userId:
+          type: integer
+          description: User ID
+          example: 1
+        productId:
+          type: integer
+          description: Product ID
+          example: 1
+        productName:
+          type: string
+          description: Product name
+          example: "Premium Product"
+        productPrice:
+          type: integer
+          description: Product price
+          example: 1000
+        created_at:
+          type: string
+          format: date-time
+          description: Wishlist item creation timestamp
+          example: "2024-01-01T00:00:00.000Z"
+      required:
+        - id
+        - userId
+        - productId
+        - productName
+        - productPrice
+        - created_at
+
+tags:
+  - name: Products
+    description: Product management operations
+  - name: Orders
+    description: Order management operations
+  - name: Users
+    description: User management operations
+  - name: FAQ
+    description: FAQ management operations
+  - name: Admin
+    description: Admin panel operations
+  - name: Bank Details
+    description: Bank details management operations
+  - name: Payments
+    description: Payment processing operations
+  - name: Wishlist
+    description: Wishlist management operations
+
+externalDocs:
+  description: Find more info about the API
+  url: https://github.com/your-repo/multi-level-marketing-api 

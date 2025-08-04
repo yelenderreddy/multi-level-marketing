@@ -20,6 +20,7 @@ export const products = pgTable('products', {
 
   productName: varchar('productName', { length: 255 }).notNull(),
   description: text('description'),
+  photo: varchar('photo', { length: 255 }),
   productPrice: integer('productPrice').notNull().default(0),
   productCount: integer('productCount').notNull().default(0),
   productStatus: productStatusEnum('productStatus')

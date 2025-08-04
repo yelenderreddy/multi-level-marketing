@@ -10,9 +10,11 @@ import { products } from '../db/schemas/productSchema';
 import { users } from '../db/schemas/userSchema';
 import { desc, eq } from 'drizzle-orm';
 import { orderHistory } from 'src/db/schemas/orderHistorySchema';
+import { FileUploadService } from './file-upload.service';
 
 @Injectable()
 export class ProductService {
+  constructor(private readonly fileUploadService: FileUploadService) {}
   //add products
   async addProducts(
     productList: {
@@ -21,6 +23,7 @@ export class ProductService {
       productCode: number;
       productPrice: number;
       description?: string;
+      photo?: string;
     }[],
   ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
@@ -66,6 +69,61 @@ export class ProductService {
     }
   }
 
+  //add single product with photo
+  async addProductWithPhoto(
+    productData: {
+      productName: string;
+      productCount: number;
+      productCode: number;
+      productPrice: number;
+      description?: string;
+    },
+    photoFile?: Express.Multer.File,
+  ): Promise<{ statusCode: number; message: string; data?: any }> {
+    try {
+      if (
+        !productData.productName ||
+        productData.productCount < 0 ||
+        !productData.productCode ||
+        !productData.productPrice
+      ) {
+        throw new HttpException(
+          'Invalid product data provided',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      let photoFilename: string | null = null;
+      if (photoFile) {
+        photoFilename = photoFile.filename;
+      }
+
+      const productToInsert = {
+        ...productData,
+        photo: photoFilename,
+      };
+
+      const result = await db.insert(products).values(productToInsert).returning();
+
+      // Add photo URL to the response
+      const productWithPhotoUrl = result.map(product => ({
+        ...product,
+        photoUrl: product.photo ? this.fileUploadService.getFileUrl(product.photo) : null,
+      }));
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'Product created successfully',
+        data: productWithPhotoUrl[0],
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to create product',
+      );
+    }
+  }
+
   //get all products
   async getAllProducts(): Promise<{
     statusCode: number;
@@ -82,10 +140,16 @@ export class ProductService {
         throw new NotFoundException('No products found');
       }
 
+      // Add photo URLs to each product
+      const productsWithPhotoUrls = result.map(product => ({
+        ...product,
+        photoUrl: product.photo ? this.fileUploadService.getFileUrl(product.photo) : null,
+      }));
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Products fetched successfully',
-        data: result,
+        data: productsWithPhotoUrls,
       };
     } catch (error) {
       console.error(error);
@@ -209,10 +273,17 @@ export class ProductService {
       if (!result || result.length === 0) {
         throw new NotFoundException('Product not found');
       }
+      
+      // Add photo URL to the product
+      const productWithPhotoUrl = {
+        ...result[0],
+        photoUrl: result[0].photo ? this.fileUploadService.getFileUrl(result[0].photo) : null,
+      };
+      
       return {
         statusCode: HttpStatus.OK,
         message: 'Product fetched successfully',
-        data: result[0],
+        data: productWithPhotoUrl,
       };
     } catch (error) {
       console.error(error);
@@ -265,6 +336,11 @@ export class ProductService {
         .where(eq(products.id, productId));
       if (!product || product.length === 0) {
         throw new NotFoundException('Product not found');
+      }
+
+      // Delete the photo file if it exists
+      if (product[0].photo) {
+        await this.fileUploadService.deleteFile(product[0].photo);
       }
 
       // Delete the product

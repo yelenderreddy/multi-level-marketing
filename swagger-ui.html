@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Level Marketing API - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin:0;
+            background: #fafafa;
+        }
+        .auth-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            padding: 10px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .auth-button:hover {
+            background: #45a049;
+        }
+        .server-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+            padding: 10px 15px;
+            background: #2196F3;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="server-info">
+        <strong>Server Status:</strong><br>
+        Make sure your server is running on:<br>
+        <code>http://localhost:3000</code><br><br>
+        <strong>Admin Login:</strong><br>
+        Username: <code>admin</code><br>
+        Password: <code>admin123</code>
+    </div>
+    
+    <div id="swagger-ui"></div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: './swagger-product-api.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    // Add JWT token if available
+                    const token = localStorage.getItem('jwt-token');
+                    if (token && request.headers) {
+                        request.headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    return request;
+                },
+                onComplete: function() {
+                    // Add custom authentication button
+                    const authBtn = document.createElement('button');
+                    authBtn.innerHTML = '🔑 Set JWT Token';
+                    authBtn.className = 'auth-button';
+                    authBtn.onclick = function() {
+                        const token = prompt('Enter your JWT token:');
+                        if (token) {
+                            localStorage.setItem('jwt-token', token);
+                            alert('JWT token set successfully!');
+                            location.reload();
+                        }
+                    };
+                    document.body.appendChild(authBtn);
+                }
+            });
+        };
+    </script>
+</body>
+</html> 

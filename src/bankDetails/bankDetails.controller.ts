@@ -16,13 +16,21 @@ import {
 import { BankDetailsService, BankDetailsDto } from './bankDetails.service';
 import { CreateBankDetailsDto, UpdateBankDetailsDto } from './bankDetails.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Bank Details')
 @Controller('api/bankDetails')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class BankDetailsController {
   constructor(private readonly bankDetailsService: BankDetailsService) {}
 
   @Get('getBankDetails/:userId')
+  @ApiOperation({ summary: 'Get bank details for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiResponse({ status: 200, description: 'Bank details fetched successfully' })
+  @ApiResponse({ status: 404, description: 'Bank details not found for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async getBankDetailsWithUser(@Param('userId', ParseIntPipe) userId: number) {
     try {
       const bankDetails = await this.bankDetailsService.getBankDetailsWithUser(userId);
@@ -51,6 +59,24 @@ export class BankDetailsController {
   }
 
   @Post('createBankDetails/:userId')
+  @ApiOperation({ summary: 'Create bank details for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        bankName: { type: 'string', example: 'HDFC Bank' },
+        accountNumber: { type: 'string', example: '1234567890' },
+        ifscCode: { type: 'string', example: 'HDFC0001234' },
+        accountHolderName: { type: 'string', example: 'John Doe' },
+      },
+      required: ['bankName', 'accountNumber', 'ifscCode', 'accountHolderName'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Bank details created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error' })
+  @ApiResponse({ status: 409, description: 'Bank details already exist for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createBankDetails(
     @Param('userId', ParseIntPipe) userId: number,
     @Body(new ValidationPipe({ transform: true, whitelist: true })) bankDetails: CreateBankDetailsDto,
@@ -77,6 +103,23 @@ export class BankDetailsController {
   }
 
   @Put('updateBankDetails/:userId')
+  @ApiOperation({ summary: 'Update bank details for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        bankName: { type: 'string', example: 'HDFC Bank' },
+        accountNumber: { type: 'string', example: '1234567890' },
+        ifscCode: { type: 'string', example: 'HDFC0001234' },
+        accountHolderName: { type: 'string', example: 'John Doe' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Bank details updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error' })
+  @ApiResponse({ status: 404, description: 'Bank details not found for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async updateBankDetails(
     @Param('userId', ParseIntPipe) userId: number,
     @Body(new ValidationPipe({ transform: true, whitelist: true })) bankDetails: UpdateBankDetailsDto,
@@ -103,6 +146,23 @@ export class BankDetailsController {
   }
 
   @Post('createOrUpdateBankDetails/:userId')
+  @ApiOperation({ summary: 'Create or update bank details for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        bankName: { type: 'string', example: 'HDFC Bank' },
+        accountNumber: { type: 'string', example: '1234567890' },
+        ifscCode: { type: 'string', example: 'HDFC0001234' },
+        accountHolderName: { type: 'string', example: 'John Doe' },
+      },
+      required: ['bankName', 'accountNumber', 'ifscCode', 'accountHolderName'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Bank details created/updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async createOrUpdateBankDetails(
     @Param('userId', ParseIntPipe) userId: number,
     @Body(new ValidationPipe({ transform: true, whitelist: true })) bankDetails: CreateBankDetailsDto,
@@ -129,6 +189,11 @@ export class BankDetailsController {
   }
 
   @Delete('deleteBankDetails/:userId')
+  @ApiOperation({ summary: 'Delete bank details for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiResponse({ status: 200, description: 'Bank details deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Bank details not found for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async deleteBankDetails(@Param('userId', ParseIntPipe) userId: number) {
     try {
       const result = await this.bankDetailsService.deleteBankDetails(userId);
@@ -152,6 +217,10 @@ export class BankDetailsController {
   }
 
   @Get('checkBankDetails/:userId')
+  @ApiOperation({ summary: 'Check if bank details exist for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiResponse({ status: 200, description: 'Bank details check completed' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async checkBankDetails(@Param('userId', ParseIntPipe) userId: number) {
     try {
       const hasBankDetails = await this.bankDetailsService.checkBankDetailsExist(userId);
@@ -174,6 +243,21 @@ export class BankDetailsController {
   }
 
   @Post('validateBankDetails')
+  @ApiOperation({ summary: 'Validate bank details format' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        bankName: { type: 'string', example: 'HDFC Bank' },
+        accountNumber: { type: 'string', example: '1234567890' },
+        ifscCode: { type: 'string', example: 'HDFC0001234' },
+        accountHolderName: { type: 'string', example: 'John Doe' },
+      },
+      required: ['bankName', 'accountNumber', 'ifscCode', 'accountHolderName'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Bank details validation completed' })
+  @ApiResponse({ status: 400, description: 'Validation failed' })
   async validateBankDetails(@Body(new ValidationPipe({ transform: true, whitelist: true })) bankDetails: CreateBankDetailsDto) {
     try {
       const validation = await this.bankDetailsService.validateBankDetails(bankDetails);
