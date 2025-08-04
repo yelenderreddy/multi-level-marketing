@@ -15,11 +15,11 @@ import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('product')
-@UseGuards(JwtAuthGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post('/add-multiple')
+  @UseGuards(JwtAuthGuard)
   async addProducts(
     @Body()
     body: {
@@ -28,6 +28,7 @@ export class ProductController {
         productCount: number;
         productCode: number;
         productPrice: number;
+        description?: string;
       }[];
     },
   ) {
@@ -63,6 +64,7 @@ export class ProductController {
   }
 
   @Post('/order')
+  @UseGuards(JwtAuthGuard)
   async orderProduct(
     @Body() body: { userId: number; productName: string; quantity?: number },
   ) {
@@ -78,7 +80,9 @@ export class ProductController {
 
     return this.productService.orderProduct(userId, productName, quantity || 1);
   }
+  
   @Get('/order-history/:userId')
+  @UseGuards(JwtAuthGuard)
   async getOrderHistory(@Param('userId') userId: string) {
     const id = parseInt(userId, 10);
     if (isNaN(id)) {
@@ -89,6 +93,7 @@ export class ProductController {
   }
 
   @Put('/order-status/:orderId')
+  @UseGuards(JwtAuthGuard)
   async updateOrderStatus(
     @Param('orderId') orderId: string,
     @Body() body: { status: string },
@@ -113,6 +118,7 @@ export class ProductController {
   }
 
   @Put('/update/:id')
+  @UseGuards(JwtAuthGuard)
   async updateProduct(
     @Param('id') id: string,
     @Body() updates: Record<string, any>,
@@ -129,6 +135,7 @@ export class ProductController {
   }
 
   @Delete('deleteProduct/:id')
+  @UseGuards(JwtAuthGuard)
   async deleteProduct(@Param('id') id: string) {
     const productId = parseInt(id, 10);
     if (isNaN(productId)) {
@@ -142,6 +149,7 @@ export class ProductController {
   }
 
   @Get('/order-details/all')
+  @UseGuards(JwtAuthGuard)
   async getAllOrderDetails(
     @Query('page') page = '1',
     @Query('limit') limit = '10',

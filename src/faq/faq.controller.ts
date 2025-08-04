@@ -13,11 +13,11 @@ import { FaqService } from './faq.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('faq')
-@UseGuards(JwtAuthGuard)
 export class FaqController {
   constructor(private readonly faqService: FaqService) {}
 
   @Post('/createFaq')
+  @UseGuards(JwtAuthGuard)
   async createFaq(
     @Body()
     body: {
@@ -35,6 +35,7 @@ export class FaqController {
   }
 
   @Put('/updateFaq/:id')
+  @UseGuards(JwtAuthGuard)
   async updateFaq(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { question?: string; answer?: string; category?: string },
@@ -43,6 +44,7 @@ export class FaqController {
   }
 
   @Delete('/deleteFaq/:id')
+  @UseGuards(JwtAuthGuard)
   async deleteFaq(@Param('id', ParseIntPipe) id: number) {
     return this.faqService.deleteFaq(id);
   }

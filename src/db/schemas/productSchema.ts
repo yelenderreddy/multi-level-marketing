@@ -5,6 +5,7 @@ import {
   integer,
   pgEnum,
   timestamp,
+  text,
 } from 'drizzle-orm/pg-core';
 
 // Optional ENUM for product status
@@ -18,6 +19,7 @@ export const products = pgTable('products', {
   id: serial('id').primaryKey().notNull(),
 
   productName: varchar('productName', { length: 255 }).notNull(),
+  description: text('description'),
   productPrice: integer('productPrice').notNull().default(0),
   productCount: integer('productCount').notNull().default(0),
   productStatus: productStatusEnum('productStatus')

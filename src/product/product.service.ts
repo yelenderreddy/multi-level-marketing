@@ -20,6 +20,7 @@ export class ProductService {
       productCount: number;
       productCode: number;
       productPrice: number;
+      description?: string;
     }[],
   ): Promise<{ statusCode: number; message: string; data?: any }> {
     try {
