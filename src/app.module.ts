@@ -11,6 +11,7 @@ import { FaqService } from './faq/faq.service';
 import { FaqModule } from './faq/faq.module';
 import { AdminModule } from './admin/admin.module';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { BankDetailsModule } from './bankDetails/bankDetails.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     FaqModule,
     AdminModule,
     WishlistModule,
+    BankDetailsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ProductService, FaqService],
