@@ -194,6 +194,7 @@ export class UsersService {
         referral_code: user.referral_code,
         referred_by: user.referred_by_code,
         payment_status: user.payment_status,
+        wallet_balance:user.wallet_balance,
         created_at: user.created_at,
       },
     };
