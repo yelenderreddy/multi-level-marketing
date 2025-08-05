@@ -36,6 +36,13 @@
       "when": 1754303773729,
       "tag": "0004_pale_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1754378782980,
+      "tag": "0005_bitter_shotgun",
+      "breakpoints": true
     }
   ]
 }

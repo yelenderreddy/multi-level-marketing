@@ -12,6 +12,7 @@ import { FaqModule } from './faq/faq.module';
 import { AdminModule } from './admin/admin.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { BankDetailsModule } from './bankDetails/bankDetails.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BankDetailsModule } from './bankDetails/bankDetails.module';
     AdminModule,
     WishlistModule,
     BankDetailsModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService, FaqService],

@@ -17,6 +17,7 @@ import { BankDetailsService, BankDetailsDto } from './bankDetails.service';
 import { CreateBankDetailsDto, UpdateBankDetailsDto } from './bankDetails.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { response } from 'express';
 
 @ApiTags('Bank Details')
 @Controller('api/bankDetails')
@@ -88,6 +89,7 @@ export class BankDetailsController {
         statusCode: HttpStatus.CREATED,
         message: 'Bank details created successfully',
         data: result,
+        response:'pending'
       };
     } catch (error) {
       console.error('Error in createBankDetails controller:', error);
@@ -131,6 +133,7 @@ export class BankDetailsController {
         statusCode: HttpStatus.OK,
         message: 'Bank details updated successfully',
         data: result,
+        response:'pending'
       };
     } catch (error) {
       console.error('Error in updateBankDetails controller:', error);
@@ -174,6 +177,7 @@ export class BankDetailsController {
         statusCode: HttpStatus.OK,
         message: 'Bank details created/updated successfully',
         data: result,
+        response:'pending'
       };
     } catch (error) {
       console.error('Error in createOrUpdateBankDetails controller:', error);

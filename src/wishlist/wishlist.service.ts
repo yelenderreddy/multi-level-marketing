@@ -3,7 +3,7 @@ import { db } from '../db/dbConnection/db.connect';
 import { wishlist } from '../db/schemas/wishlistSchema';
 import { products } from '../db/schemas/productSchema';
 import { users } from '../db/schemas/userSchema';
-import { eq } from 'drizzle-orm';
+import { eq, and, type InferSelectModel } from 'drizzle-orm';
 
 @Injectable()
 export class WishlistService {
@@ -14,9 +14,9 @@ export class WishlistService {
       .insert(wishlist)
       .values({
         userId,
-        productId: product.id,
+        productId: product.productId,
         productName: product.productName,
-        productPrice: product.productPrice || '',
+        productPrice: product.productPrice || 0,
       })
       .returning();
     return result;
@@ -41,5 +41,29 @@ export class WishlistService {
       .leftJoin(users, eq(wishlist.userId, users.id))
       .where(eq(wishlist.userId, userId));
     return result;
+  }
+
+  async removeFromWishlist(wishlistId: number, userId: number) {
+    const result = await db
+      .delete(wishlist)
+      .where(eq(wishlist.id, wishlistId))
+      .returning();
+    return result;
+  }
+
+  async clearWishlist(userId: number) {
+    const result = await db
+      .delete(wishlist)
+      .where(eq(wishlist.userId, userId))
+      .returning();
+    return result;
+  }
+
+  async isInWishlist(userId: number, productId: number) {
+    const result = await db
+      .select()
+      .from(wishlist)
+      .where(and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)));
+    return { isInWishlist: result.length > 0 };
   }
 }
