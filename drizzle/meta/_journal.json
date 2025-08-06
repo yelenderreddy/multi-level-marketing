@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1753944019889,
-      "tag": "0000_smiling_scarecrow",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1754042750839,
-      "tag": "0001_watery_maddog",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1754283718459,
-      "tag": "0002_omniscient_morgan_stark",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1754291189263,
-      "tag": "0003_soft_edwin_jarvis",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1754303773729,
-      "tag": "0004_pale_wrecking_crew",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1754378782980,
-      "tag": "0005_bitter_shotgun",
+      "when": 1754472963935,
+      "tag": "0000_sticky_purple_man",
       "breakpoints": true
     }
   ]

@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "wallet_balance" integer DEFAULT 0 NOT NULL;

@@ -280,4 +280,141 @@ export class BankDetailsController {
       };
     }
   }
+
+  @Get('getAllBankDetailsWithUsers')
+  @ApiOperation({ summary: 'Get all bank details with user information and status' })
+  @ApiResponse({ status: 200, description: 'All bank details with users fetched successfully' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async getAllBankDetailsWithUsers() {
+    try {
+      const bankDetails = await this.bankDetailsService.getAllBankDetailsWithUsers();
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'All bank details with users fetched successfully',
+        data: bankDetails,
+      };
+    } catch (error) {
+      console.error('Error in getAllBankDetailsWithUsers controller:', error);
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        data: null,
+      };
+    }
+  }
+
+  @Put('updateRedeemStatus/:userId')
+  @ApiOperation({ summary: 'Update redeem status for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { 
+          type: 'string', 
+          enum: ['processing', 'deposited'],
+          example: 'deposited'
+        },
+      },
+      required: ['status'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Redeem status updated successfully' })
+  @ApiResponse({ status: 404, description: 'Bank details not found for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async updateRedeemStatus(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body('status') status: 'processing' | 'deposited',
+  ) {
+    try {
+      const result = await this.bankDetailsService.updateRedeemStatus(userId, status);
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Redeem status updated successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in updateRedeemStatus controller:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        data: null,
+      };
+    }
+  }
+
+  @Put('updateRedeemAmount/:userId')
+  @ApiOperation({ summary: 'Update redeem amount for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        redeemAmount: { 
+          type: 'number', 
+          minimum: 250,
+          example: 500
+        },
+      },
+      required: ['redeemAmount'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Redeem amount updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid redeem amount' })
+  @ApiResponse({ status: 404, description: 'Bank details not found for this user' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async updateRedeemAmount(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body('redeemAmount') redeemAmount: number,
+  ) {
+    try {
+      const result = await this.bankDetailsService.updateRedeemAmount(userId, redeemAmount);
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Redeem amount updated successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in updateRedeemAmount controller:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        data: null,
+      };
+    }
+  }
+
+  @Get('redeemHistory/:userId')
+  @ApiOperation({ summary: 'Get redeem history for a user' })
+  @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
+  @ApiResponse({ status: 200, description: 'Redeem history fetched successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async getRedeemHistory(@Param('userId', ParseIntPipe) userId: number) {
+    try {
+      const result = await this.bankDetailsService.getRedeemHistory(userId);
+      
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Redeem history fetched successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in getRedeemHistory controller:', error);
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        data: null,
+      };
+    }
+  }
 } 

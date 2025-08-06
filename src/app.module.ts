@@ -13,6 +13,8 @@ import { AdminModule } from './admin/admin.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { BankDetailsModule } from './bankDetails/bankDetails.module';
 import { CartModule } from './cart/cart.module';
+import { PayoutsModule } from './payouts/payouts.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { CartModule } from './cart/cart.module';
     WishlistModule,
     BankDetailsModule,
     CartModule,
+    PayoutsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, FaqService],

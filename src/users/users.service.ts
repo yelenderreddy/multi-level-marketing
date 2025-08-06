@@ -94,10 +94,16 @@ export class UsersService {
       }
 
       finalReferredByCode = referrerResult[0].referral_code;
-      // Increment referralCount for the referrer (ensure field name matches schema)
+      // Increment referralCount for the referrer
       const currentCount = referrerResult[0].referralCount || 0;
+      const currentWalletBalance = referrerResult[0].wallet_balance || 0;
+      const referralCountAtLastRedeem = referrerResult[0].referralCountAtLastRedeem || 0;
       const newReferralCount = currentCount + 1;
-      const newWalletBalance = newReferralCount * 250;
+      
+      // Calculate new wallet balance: existing balance + (new referrals since last redeem * 250)
+      const newReferralsSinceLastRedeem = newReferralCount - referralCountAtLastRedeem;
+      const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
+      const newWalletBalance = currentWalletBalance + 250; // Add 250 for this new referral
 
       await db
         .update(users)
@@ -115,8 +121,12 @@ export class UsersService {
         .where(eq(users.referral_code, referredByCode));
       if (referrerResult && referrerResult.length > 0) {
         const currentCount = referrerResult[0].referralCount || 0;
+        const currentWalletBalance = referrerResult[0].wallet_balance || 0;
+        const referralCountAtLastRedeem = referrerResult[0].referralCountAtLastRedeem || 0;
         const newReferralCount = currentCount + 1;
-        const newWalletBalance = newReferralCount * 250;
+        
+        // Calculate new wallet balance: existing balance + 250 for this new referral
+        const newWalletBalance = currentWalletBalance + 250;
 
         await db
           .update(users)
@@ -438,9 +448,13 @@ export class UsersService {
 
   async updateWalletBalance(userId: number) {
     try {
-      // Get user's current referral count
+      // Get user's current data
       const userResult = await db
-        .select({ referralCount: users.referralCount })
+        .select({ 
+          referralCount: users.referralCount,
+          referralCountAtLastRedeem: users.referralCountAtLastRedeem,
+          wallet_balance: users.wallet_balance
+        })
         .from(users)
         .where(eq(users.id, userId));
 
@@ -449,9 +463,15 @@ export class UsersService {
       }
 
       const currentReferralCount = userResult[0].referralCount || 0;
+      const referralCountAtLastRedeem = userResult[0].referralCountAtLastRedeem || 0;
+      const currentWalletBalance = userResult[0].wallet_balance || 0;
 
-      // Calculate wallet balance: referral count * 250
-      const newWalletBalance = currentReferralCount * 250;
+      // Calculate new referrals since last redeem
+      const newReferralsSinceLastRedeem = currentReferralCount - referralCountAtLastRedeem;
+      
+      // Calculate wallet balance: existing balance + (new referrals * 250)
+      const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
+      const newWalletBalance = currentWalletBalance + newReferralsEarnings;
 
       // Update the wallet balance
       const updatedUser = await db
@@ -469,6 +489,8 @@ export class UsersService {
         data: {
           userId,
           referralCount: currentReferralCount,
+          newReferralsSinceLastRedeem,
+          newReferralsEarnings,
           walletBalance: newWalletBalance,
           user: updatedUser[0],
         },
@@ -484,7 +506,12 @@ export class UsersService {
     try {
       // Get user by referral code
       const userResult = await db
-        .select({ id: users.id, referralCount: users.referralCount })
+        .select({ 
+          id: users.id, 
+          referralCount: users.referralCount,
+          referralCountAtLastRedeem: users.referralCountAtLastRedeem,
+          wallet_balance: users.wallet_balance
+        })
         .from(users)
         .where(eq(users.referral_code, referralCode));
 
@@ -494,9 +521,15 @@ export class UsersService {
 
       const userId = userResult[0].id;
       const currentReferralCount = userResult[0].referralCount || 0;
+      const referralCountAtLastRedeem = userResult[0].referralCountAtLastRedeem || 0;
+      const currentWalletBalance = userResult[0].wallet_balance || 0;
 
-      // Calculate wallet balance: referral count * 250
-      const newWalletBalance = currentReferralCount * 250;
+      // Calculate new referrals since last redeem
+      const newReferralsSinceLastRedeem = currentReferralCount - referralCountAtLastRedeem;
+      
+      // Calculate wallet balance: existing balance + (new referrals * 250)
+      const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
+      const newWalletBalance = currentWalletBalance + newReferralsEarnings;
 
       // Update the wallet balance
       const updatedUser = await db
@@ -515,6 +548,8 @@ export class UsersService {
           userId,
           referralCode,
           referralCount: currentReferralCount,
+          newReferralsSinceLastRedeem,
+          newReferralsEarnings,
           walletBalance: newWalletBalance,
           user: updatedUser[0],
         },

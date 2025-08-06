@@ -6,4 +6,6 @@ export * from './wishlistSchema';
 export * from './cartSchema';
 export * from './faqSchema';
 export * from './rewardTargetSchema';
-export * from './userBankDetailsSchema'; 
+export { userBankDetails, redeemStatusEnum } from './userBankDetailsSchema';
+export * from './redeemHistorySchema';
+export * from './payoutsSchema'; 

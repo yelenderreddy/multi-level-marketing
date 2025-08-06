@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, Matches, MaxLength, MinLength, IsOptional, IsNumber, IsIn } from 'class-validator';
 
 export class CreateBankDetailsDto {
   @IsString()
@@ -21,6 +21,14 @@ export class CreateBankDetailsDto {
   @MaxLength(255, { message: 'Account holder name cannot exceed 255 characters' })
   @MinLength(2, { message: 'Account holder name must be at least 2 characters' })
   accountHolderName: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Redeem amount must be a number' })
+  redeemAmount?: number;
+
+  @IsOptional()
+  @IsIn(['processing', 'deposited'], { message: 'Redeem status must be either processing or deposited' })
+  redeemStatus?: 'processing' | 'deposited';
 }
 
 export class UpdateBankDetailsDto {
@@ -44,6 +52,14 @@ export class UpdateBankDetailsDto {
   @MaxLength(255, { message: 'Account holder name cannot exceed 255 characters' })
   @MinLength(2, { message: 'Account holder name must be at least 2 characters' })
   accountHolderName: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Redeem amount must be a number' })
+  redeemAmount?: number;
+
+  @IsOptional()
+  @IsIn(['processing', 'deposited'], { message: 'Redeem status must be either processing or deposited' })
+  redeemStatus?: 'processing' | 'deposited';
 }
 
 export class BankDetailsResponseDto {
@@ -52,6 +68,8 @@ export class BankDetailsResponseDto {
   ifscCode: string;
   bankName: string;
   accountHolderName: string;
+  redeemAmount: number;
+  redeemStatus: 'processing' | 'deposited';
   created_at: Date;
   updated_at: Date;
   user: {
