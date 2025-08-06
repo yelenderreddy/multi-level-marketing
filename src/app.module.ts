@@ -15,6 +15,8 @@ import { BankDetailsModule } from './bankDetails/bankDetails.module';
 import { CartModule } from './cart/cart.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { PaymentsModule } from './payments/payments.module';
+import { TermsModule } from './terms/terms.module';
+import { PrivacyModule } from './privacy/privacy.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { PaymentsModule } from './payments/payments.module';
     CartModule,
     PayoutsModule,
     PaymentsModule,
+    TermsModule,
+    PrivacyModule,
   ],
   controllers: [AppController],
   providers: [AppService, FaqService],
