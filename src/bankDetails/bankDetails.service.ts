@@ -301,7 +301,7 @@ export class BankDetailsService {
             bankName: bankDetails.bankName,
             accountHolderName: bankDetails.accountHolderName,
             ...(bankDetails.redeemAmount !== undefined && {
-            redeemAmount: bankDetails.redeemAmount,
+              redeemAmount: bankDetails.redeemAmount,
             }),
             ...(bankDetails.redeemStatus !== undefined && {
               redeemStatus: bankDetails.redeemStatus,
@@ -318,7 +318,7 @@ export class BankDetailsService {
           bankName: bankDetails.bankName,
           accountHolderName: bankDetails.accountHolderName,
           ...(bankDetails.redeemAmount !== undefined && {
-          redeemAmount: bankDetails.redeemAmount,
+            redeemAmount: bankDetails.redeemAmount,
           }),
           ...(bankDetails.redeemStatus !== undefined && {
             redeemStatus: bankDetails.redeemStatus,
