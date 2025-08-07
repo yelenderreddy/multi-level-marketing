@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build && node -e \"console.log('\\n✅ Build completed successfully!\\n📁 Output directory: ./dist\\n🚀 Ready for production deployment!\\n')\"",
+    "build": "nest build && node build-success.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
