@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, HttpStatus } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { userBankDetails, users, redeemHistory, payouts } from '../db/schemas';
 import { eq, and } from 'drizzle-orm';
@@ -125,7 +125,7 @@ export class BankDetailsService {
     }
   }
 
-  async updateBankDetails(userId: number, bankDetails: BankDetailsDto): Promise<BankDetailsWithUser> {
+  async updateBankDetails(userId: number, bankDetails: BankDetailsDto): Promise<BankDetailsWithUser | null> {
     try {
       // Check if bank details exist for this user
       const existingBankDetails = await db
@@ -134,7 +134,7 @@ export class BankDetailsService {
         .where(eq(userBankDetails.userId, userId));
 
       if (existingBankDetails.length === 0) {
-        throw new NotFoundException('Bank details not found for this user');
+        return null;
       }
 
       // Update existing bank details

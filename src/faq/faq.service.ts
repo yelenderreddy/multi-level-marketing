@@ -69,7 +69,11 @@ export class FaqService {
         .limit(1);
 
       if (!exists || exists.length === 0) {
-        throw new NotFoundException('FAQ not found');
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'FAQ not found',
+          data: null,
+        };
       }
 
       const result = await db
@@ -102,7 +106,11 @@ export class FaqService {
         .limit(1);
 
       if (!exists || exists.length === 0) {
-        throw new NotFoundException('FAQ not found');
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'FAQ not found',
+          data: null,
+        };
       }
 
       const result = await db

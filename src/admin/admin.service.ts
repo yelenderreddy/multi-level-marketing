@@ -81,7 +81,11 @@ export class AdminService {
         .where(eq(rewardTargets.id, id))
         .returning();
       if (!result || result.length === 0) {
-        throw new NotFoundException('Reward target not found');
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Reward target not found',
+          data: null,
+        };
       }
       return {
         statusCode: HttpStatus.OK,
@@ -148,7 +152,11 @@ export class AdminService {
           .from(users)
           .where(eq(users.id, userId));
         if (!userResult || userResult.length === 0) {
-          throw new NotFoundException('User not found');
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'User not found',
+            data: null,
+          };
         }
         // If current reward is 'approved', replace with 'delivered'
         if (userResult[0].reward === 'approved') {
@@ -163,7 +171,11 @@ export class AdminService {
         .where(eq(users.id, userId))
         .returning();
       if (!result || result.length === 0) {
-        throw new NotFoundException('User not found');
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'User not found',
+          data: null,
+        };
       }
       return {
         statusCode: 200,

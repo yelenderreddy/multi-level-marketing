@@ -66,14 +66,14 @@ export class PrivacyService {
     };
   }
 
-  async getPrivacyById(id: number): Promise<PrivacyResponseDto> {
+  async getPrivacyById(id: number): Promise<PrivacyResponseDto | null> {
     const [privacyItem] = await db
       .select()
       .from(privacy)
       .where(eq(privacy.id, id));
 
     if (!privacyItem) {
-      throw new NotFoundException(`Privacy with ID ${id} not found`);
+      return null;
     }
 
     return {
@@ -86,7 +86,7 @@ export class PrivacyService {
     };
   }
 
-  async updatePrivacy(id: number, updatePrivacyDto: UpdatePrivacyDto): Promise<PrivacyResponseDto> {
+  async updatePrivacy(id: number, updatePrivacyDto: UpdatePrivacyDto): Promise<PrivacyResponseDto | null> {
     const updateData: any = {
       updated_at: new Date(),
     };
@@ -108,7 +108,7 @@ export class PrivacyService {
       .returning();
 
     if (!updatedPrivacy) {
-      throw new NotFoundException(`Privacy with ID ${id} not found`);
+      return null;
     }
 
     return {
@@ -121,14 +121,15 @@ export class PrivacyService {
     };
   }
 
-  async deletePrivacy(id: number): Promise<void> {
+  async deletePrivacy(id: number): Promise<boolean> {
     const [deletedPrivacy] = await db
       .delete(privacy)
       .where(eq(privacy.id, id))
       .returning();
 
     if (!deletedPrivacy) {
-      throw new NotFoundException(`Privacy with ID ${id} not found`);
+      return false;
     }
+    return true;
   }
 } 

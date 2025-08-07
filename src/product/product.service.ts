@@ -136,10 +136,6 @@ export class ProductService {
         .from(products)
         .orderBy(desc(products.created_at));
 
-      if (!result || result.length === 0) {
-        throw new NotFoundException('No products found');
-      }
-
       // Add photo URLs to each product
       const productsWithPhotoUrls = result.map(product => ({
         ...product,
@@ -148,7 +144,7 @@ export class ProductService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Products fetched successfully',
+        message: result.length === 0 ? 'No products found' : 'Products fetched successfully',
         data: productsWithPhotoUrls,
       };
     } catch (error) {
@@ -227,33 +223,81 @@ export class ProductService {
 
   //get order history
   async getOrderHistory(userId: number) {
-    const orders = await db
-      .select({
-        id: orderHistory.id,
-        userId: orderHistory.userId,
-        productId: orderHistory.productId,
-        productName: orderHistory.productName,
-        quantity: orderHistory.quantity,
-        status: orderHistory.status,
-        orderedAt: orderHistory.orderedAt,
-        productPrice: products.productPrice,
-      })
-      .from(orderHistory)
-      .leftJoin(products, eq(orderHistory.productId, products.id))
-      .where(eq(orderHistory.userId, userId))
-      .orderBy(desc(orderHistory.orderedAt));
+    try {
+      // First, get all orders for the user
+      const orders = await db
+        .select({
+          id: orderHistory.id,
+          userId: orderHistory.userId,
+          productId: orderHistory.productId,
+          productName: orderHistory.productName,
+          quantity: orderHistory.quantity,
+          status: orderHistory.status,
+          orderedAt: orderHistory.orderedAt,
+        })
+        .from(orderHistory)
+        .where(eq(orderHistory.userId, userId))
+        .orderBy(desc(orderHistory.orderedAt));
 
-    // Transform the data to handle null productPrice
-    const transformedOrders = orders.map(order => ({
-      ...order,
-      productPrice: order.productPrice || 0, // Default to 0 if productPrice is null
-    }));
+      // For each order, fetch the product price separately
+      const transformedOrders = await Promise.all(orders.map(async (order) => {
+        let productPrice = 0;
+        
+        try {
+          // Fetch the product price
+          const productResult = await db
+            .select({ productPrice: products.productPrice })
+            .from(products)
+            .where(eq(products.id, order.productId))
+            .limit(1);
+          
+          if (productResult.length > 0) {
+            productPrice = productResult[0].productPrice;
+          } else {
+            console.warn(`Product with ID ${order.productId} not found for order ${order.id}. Creating a default product.`);
+            
+            // If product doesn't exist, create a default one
+            try {
+              const newProduct = await db
+                .insert(products)
+                .values({
+                  productName: order.productName || 'Default Product',
+                  productPrice: 100, // Default price
+                  productCount: 10,
+                  productCode: 1000 + order.productId,
+                  description: 'Auto-created product for existing order',
+                })
+                .returning();
+              
+              if (newProduct.length > 0) {
+                productPrice = newProduct[0].productPrice;
+                console.log(`Created default product with ID ${newProduct[0].id} and price ${productPrice}`);
+              }
+            } catch (createError) {
+              console.error(`Failed to create default product for order ${order.id}:`, createError);
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching product price for productId ${order.productId}:`, error);
+        }
+        
+        return {
+          ...order,
+          productPrice: productPrice,
+        };
+      }));
 
-    return {
-      statusCode: HttpStatus.OK,
-      message: `Order history for user ${userId}`,
-      data: transformedOrders,
-    };
+      return {
+        statusCode: HttpStatus.OK,
+        message: `Order history for user ${userId}`,
+        data: transformedOrders,
+      };
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to fetch order history',
+      );
+    }
   }
 
   async updateOrderStatus(orderId: number, status: string) {
@@ -286,8 +330,13 @@ export class ProductService {
         .select()
         .from(products)
         .where(eq(products.id, productId));
+      
       if (!result || result.length === 0) {
-        throw new NotFoundException('Product not found');
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Product not found',
+          data: null,
+        };
       }
       
       // Add photo URL to the product
@@ -422,16 +471,12 @@ export class ProductService {
         .limit(limit)
         .offset(offset);
 
-      if (!result || result.length === 0) {
-        throw new NotFoundException('No order history found');
-      }
-
       const total = totalCount.length;
       const totalPages = Math.ceil(total / limit);
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Order details fetched successfully',
+        message: result.length === 0 ? 'No order history found' : 'Order details fetched successfully',
         data: {
           orders: result,
           pagination: {

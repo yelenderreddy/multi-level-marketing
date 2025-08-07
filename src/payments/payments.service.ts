@@ -125,7 +125,7 @@ export class PaymentsService {
     };
   }
 
-  async getPaymentById(paymentId: number): Promise<PaymentResponseDto> {
+  async getPaymentById(paymentId: number): Promise<PaymentResponseDto | null> {
     const payment = await db
       .select({
         id: payments.id,
@@ -143,7 +143,7 @@ export class PaymentsService {
       .where(eq(payments.id, paymentId));
 
     if (payment.length === 0) {
-      throw new NotFoundException('Payment not found');
+      return null;
     }
 
     const paymentData = payment[0];

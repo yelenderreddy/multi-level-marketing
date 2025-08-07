@@ -183,7 +183,11 @@ export class UsersService {
     const userResult = await db.select().from(users).where(eq(users.id, id));
 
     if (!userResult || userResult.length === 0) {
-      throw new NotFoundException('User not found');
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User not found',
+        data: null,
+      };
     }
 
     const user = userResult[0];

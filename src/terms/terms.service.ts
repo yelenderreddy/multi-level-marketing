@@ -66,14 +66,14 @@ export class TermsService {
     };
   }
 
-  async getTermsById(id: number): Promise<TermsResponseDto> {
+  async getTermsById(id: number): Promise<TermsResponseDto | null> {
     const [term] = await db
       .select()
       .from(terms)
       .where(eq(terms.id, id));
 
     if (!term) {
-      throw new NotFoundException(`Terms with ID ${id} not found`);
+      return null;
     }
 
     return {
@@ -86,7 +86,7 @@ export class TermsService {
     };
   }
 
-  async updateTerms(id: number, updateTermsDto: UpdateTermsDto): Promise<TermsResponseDto> {
+  async updateTerms(id: number, updateTermsDto: UpdateTermsDto): Promise<TermsResponseDto | null> {
     const updateData: any = {
       updated_at: new Date(),
     };
@@ -108,7 +108,7 @@ export class TermsService {
       .returning();
 
     if (!updatedTerms) {
-      throw new NotFoundException(`Terms with ID ${id} not found`);
+      return null;
     }
 
     return {
@@ -121,14 +121,15 @@ export class TermsService {
     };
   }
 
-  async deleteTerms(id: number): Promise<void> {
+  async deleteTerms(id: number): Promise<boolean> {
     const [deletedTerms] = await db
       .delete(terms)
       .where(eq(terms.id, id))
       .returning();
 
     if (!deletedTerms) {
-      throw new NotFoundException(`Terms with ID ${id} not found`);
+      return false;
     }
+    return true;
   }
 } 

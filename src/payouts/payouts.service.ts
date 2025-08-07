@@ -142,7 +142,7 @@ export class PayoutsService {
         .returning();
 
       if (!updatedPayout) {
-        throw new NotFoundException('Payout not found');
+        return null;
       }
 
       return this.mapToResponseDto(updatedPayout);
@@ -155,7 +155,7 @@ export class PayoutsService {
     }
   }
 
-  async getPayoutById(payoutId: string): Promise<PayoutResponseDto> {
+  async getPayoutById(payoutId: string): Promise<PayoutResponseDto | null> {
     try {
       const result = await db
         .select()
@@ -163,7 +163,7 @@ export class PayoutsService {
         .where(eq(payouts.payoutId, payoutId));
 
       if (result.length === 0) {
-        throw new NotFoundException('Payout not found');
+        return null;
       }
 
       return this.mapToResponseDto(result[0]);
