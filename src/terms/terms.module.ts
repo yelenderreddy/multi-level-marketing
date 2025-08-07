@@ -7,4 +7,4 @@ import { TermsService } from './terms.service';
   providers: [TermsService],
   exports: [TermsService],
 })
-export class TermsModule {} 
+export class TermsModule {}

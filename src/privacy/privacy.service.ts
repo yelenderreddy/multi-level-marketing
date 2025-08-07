@@ -1,12 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { privacy } from '../db/schemas/privacySchema';
 import { eq, desc } from 'drizzle-orm';
-import { CreatePrivacyDto, UpdatePrivacyDto, PrivacyResponseDto } from './privacy.dto';
+import {
+  CreatePrivacyDto,
+  UpdatePrivacyDto,
+  PrivacyResponseDto,
+} from './privacy.dto';
 
 @Injectable()
 export class PrivacyService {
-  async createPrivacy(createPrivacyDto: CreatePrivacyDto): Promise<PrivacyResponseDto> {
+  async createPrivacy(
+    createPrivacyDto: CreatePrivacyDto,
+  ): Promise<PrivacyResponseDto> {
     const [newPrivacy] = await db
       .insert(privacy)
       .values({
@@ -34,7 +40,7 @@ export class PrivacyService {
       .from(privacy)
       .orderBy(desc(privacy.created_at));
 
-    return allPrivacy.map(privacyItem => ({
+    return allPrivacy.map((privacyItem) => ({
       id: privacyItem.id,
       title: privacyItem.title,
       content: privacyItem.content,
@@ -86,8 +92,11 @@ export class PrivacyService {
     };
   }
 
-  async updatePrivacy(id: number, updatePrivacyDto: UpdatePrivacyDto): Promise<PrivacyResponseDto | null> {
-    const updateData: any = {
+  async updatePrivacy(
+    id: number,
+    updatePrivacyDto: UpdatePrivacyDto,
+  ): Promise<PrivacyResponseDto | null> {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date(),
     };
 
@@ -132,4 +141,4 @@ export class PrivacyService {
     }
     return true;
   }
-} 
+}

@@ -16,12 +16,17 @@ export class CartService {
       .where(and(eq(cart.userId, userId), eq(cart.productId, productId)));
 
     if (existingItem.length > 0) {
+      const existingCartItem = existingItem[0];
+      if (!existingCartItem) {
+        throw new Error('Failed to get existing cart item');
+      }
+
       // Update quantity if item already exists
       const result = await db
         .update(cart)
-        .set({ 
-          quantity: existingItem[0].quantity + quantity,
-          updated_at: new Date()
+        .set({
+          quantity: (existingCartItem.quantity || 0) + quantity,
+          updated_at: new Date(),
         })
         .where(and(eq(cart.userId, userId), eq(cart.productId, productId)))
         .returning();
@@ -62,16 +67,35 @@ export class CartService {
       .leftJoin(products, eq(cart.productId, products.id))
       .leftJoin(users, eq(cart.userId, users.id))
       .where(eq(cart.userId, userId));
-    return result;
+
+    return result.map((item) => ({
+      cartId: item.cartId,
+      quantity: item.quantity,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      productId: item.productId,
+      productName: item.productName,
+      productPrice: item.productPrice,
+      productStatus: item.productStatus,
+      productPhoto: item.productPhoto,
+      productDescription: item.productDescription,
+      userId: item.userId,
+      userName: item.userName,
+      userEmail: item.userEmail,
+    }));
   }
 
   // Update quantity of an item in cart
-  async updateCartItemQuantity(cartId: number, userId: number, quantity: number) {
+  async updateCartItemQuantity(
+    cartId: number,
+    userId: number,
+    quantity: number,
+  ) {
     const result = await db
       .update(cart)
-      .set({ 
+      .set({
         quantity,
-        updated_at: new Date()
+        updated_at: new Date(),
       })
       .where(and(eq(cart.id, cartId), eq(cart.userId, userId)))
       .returning();
@@ -111,8 +135,8 @@ export class CartService {
       .select({ count: cart.quantity })
       .from(cart)
       .where(eq(cart.userId, userId));
-    
-    const totalCount = result.reduce((sum, item) => sum + item.count, 0);
+
+    const totalCount = result.reduce((sum, item) => sum + (item.count || 0), 0);
     return { cartCount: totalCount };
   }
 
@@ -120,8 +144,8 @@ export class CartService {
   async getCartTotal(userId: number) {
     const cartItems = await this.getCartByUserId(userId);
     const total = cartItems.reduce((sum, item) => {
-      return sum + ((item.productPrice || 0) * item.quantity);
+      return sum + (item.productPrice || 0) * (item.quantity || 0);
     }, 0);
     return { cartTotal: total };
   }
-} 
+}

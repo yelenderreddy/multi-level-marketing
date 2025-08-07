@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { terms } from '../db/schemas/termsSchema';
 import { eq, desc } from 'drizzle-orm';
@@ -34,7 +34,7 @@ export class TermsService {
       .from(terms)
       .orderBy(desc(terms.created_at));
 
-    return allTerms.map(term => ({
+    return allTerms.map((term) => ({
       id: term.id,
       title: term.title,
       content: term.content,
@@ -67,10 +67,7 @@ export class TermsService {
   }
 
   async getTermsById(id: number): Promise<TermsResponseDto | null> {
-    const [term] = await db
-      .select()
-      .from(terms)
-      .where(eq(terms.id, id));
+    const [term] = await db.select().from(terms).where(eq(terms.id, id));
 
     if (!term) {
       return null;
@@ -86,8 +83,11 @@ export class TermsService {
     };
   }
 
-  async updateTerms(id: number, updateTermsDto: UpdateTermsDto): Promise<TermsResponseDto | null> {
-    const updateData: any = {
+  async updateTerms(
+    id: number,
+    updateTermsDto: UpdateTermsDto,
+  ): Promise<TermsResponseDto | null> {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date(),
     };
 
@@ -132,4 +132,4 @@ export class TermsService {
     }
     return true;
   }
-} 
+}

@@ -6,7 +6,15 @@ export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
   @Post('add/:userId')
-  async addToWishlist(@Param('userId') userId: number, @Body() product: any) {
+  async addToWishlist(
+    @Param('userId') userId: number,
+    @Body()
+    product: {
+      productId: number;
+      productName: string;
+      productPrice?: number;
+    },
+  ) {
     return this.wishlistService.addToWishlist(userId, product);
   }
 
@@ -16,7 +24,10 @@ export class WishlistController {
   }
 
   @Delete('remove/:wishlistId/:userId')
-  async removeFromWishlist(@Param('wishlistId') wishlistId: number, @Param('userId') userId: number) {
+  async removeFromWishlist(
+    @Param('wishlistId') wishlistId: number,
+    @Param('userId') userId: number,
+  ) {
     return this.wishlistService.removeFromWishlist(wishlistId, userId);
   }
 
@@ -26,7 +37,10 @@ export class WishlistController {
   }
 
   @Get('check/:userId/:productId')
-  async isInWishlist(@Param('userId') userId: number, @Param('productId') productId: number) {
+  async isInWishlist(
+    @Param('userId') userId: number,
+    @Param('productId') productId: number,
+  ) {
     return this.wishlistService.isInWishlist(userId, productId);
   }
 }

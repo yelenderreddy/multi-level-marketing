@@ -14,7 +14,7 @@ console.log('Connecting to DB:', {
 
 const pool = new Pool({
   host: process.env.HOST,
-  port: Number(process.env.PORT),
+  port: Number(process.env.PORT || '5432'),
   user: process.env.USER,
   password: process.env.PASSWORD,
   database: process.env.DATABASE, // Correct fallback

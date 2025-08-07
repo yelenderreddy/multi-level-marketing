@@ -15,7 +15,9 @@ async function bootstrap() {
   // Swagger Documentation Setup
   const config = new DocumentBuilder()
     .setTitle('Multi-Level Marketing API')
-    .setDescription('Complete API documentation for Multi-Level Marketing application')
+    .setDescription(
+      'Complete API documentation for Multi-Level Marketing application',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -70,4 +72,8 @@ async function bootstrap() {
   console.log(`📚 API Documentation: http://localhost:${port}/api-docs`);
 }
 
-bootstrap();
+// Handle the promise properly
+bootstrap().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});

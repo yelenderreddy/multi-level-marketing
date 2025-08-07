@@ -1,9 +1,4 @@
-import {
-  pgTable,
-  serial,
-  integer,
-  timestamp,
-} from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, timestamp } from 'drizzle-orm/pg-core';
 
 export const cart = pgTable('cart', {
   id: serial('id').primaryKey().notNull(),
@@ -16,4 +11,4 @@ export const cart = pgTable('cart', {
   updated_at: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
-}); 
+});

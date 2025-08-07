@@ -11,7 +11,14 @@ import {
 } from '@nestjs/common';
 import { FaqService } from './faq.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('FAQ')
 @Controller('faq')
@@ -27,7 +34,10 @@ export class FaqController {
       type: 'object',
       properties: {
         question: { type: 'string', example: 'What is MLM?' },
-        answer: { type: 'string', example: 'Multi-Level Marketing is a business model...' },
+        answer: {
+          type: 'string',
+          example: 'Multi-Level Marketing is a business model...',
+        },
         category: { type: 'string', example: 'General' },
       },
       required: ['question', 'answer'],

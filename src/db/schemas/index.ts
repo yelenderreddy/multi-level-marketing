@@ -8,4 +8,4 @@ export * from './faqSchema';
 export * from './rewardTargetSchema';
 export { userBankDetails, redeemStatusEnum } from './userBankDetailsSchema';
 export * from './redeemHistorySchema';
-export * from './payoutsSchema'; 
+export * from './payoutsSchema';

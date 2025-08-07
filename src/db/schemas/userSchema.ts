@@ -20,8 +20,10 @@ export const users = pgTable('users', {
   password_hash: varchar('password_hash', { length: 255 }).notNull(),
   referral_code: varchar('referral_code', { length: 50 }).notNull().unique(),
   referralCount: integer('referral_count').default(0).notNull(),
-  referralCountAtLastRedeem: integer('referral_count_at_last_redeem').default(0).notNull(),
-  
+  referralCountAtLastRedeem: integer('referral_count_at_last_redeem')
+    .default(0)
+    .notNull(),
+
   reward: varchar('reward', { length: 255 }),
   wallet_balance: integer('wallet_balance').default(0).notNull(),
   // establish relationship using referral_code

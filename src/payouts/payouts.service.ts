@@ -1,12 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { payouts, users } from '../db/schemas';
-import { eq, and, desc } from 'drizzle-orm';
-import { CreatePayoutDto, UpdatePayoutDto, PayoutResponseDto } from './payouts.dto';
+import { eq, desc } from 'drizzle-orm';
+import {
+  CreatePayoutDto,
+  UpdatePayoutDto,
+  PayoutResponseDto,
+} from './payouts.dto';
 
 @Injectable()
 export class PayoutsService {
-  async createPayout(createPayoutDto: CreatePayoutDto): Promise<PayoutResponseDto> {
+  async createPayout(
+    createPayoutDto: CreatePayoutDto,
+  ): Promise<PayoutResponseDto> {
     try {
       // Check if user exists
       const userExists = await db
@@ -15,6 +25,11 @@ export class PayoutsService {
         .where(eq(users.id, createPayoutDto.userId));
 
       if (userExists.length === 0) {
+        throw new NotFoundException('User not found');
+      }
+
+      const user = userExists[0];
+      if (!user) {
         throw new NotFoundException('User not found');
       }
 
@@ -29,7 +44,7 @@ export class PayoutsService {
       }
 
       // Create new payout
-      const [newPayout] = await db
+      const result = await db
         .insert(payouts)
         .values({
           userId: createPayoutDto.userId,
@@ -43,10 +58,18 @@ export class PayoutsService {
         })
         .returning();
 
+      const newPayout = result[0];
+      if (!newPayout) {
+        throw new Error('Failed to create payout');
+      }
+
       return this.mapToResponseDto(newPayout);
     } catch (error) {
       console.error('Error creating payout:', error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new Error('Failed to create payout');
@@ -74,7 +97,7 @@ export class PayoutsService {
         .where(eq(payouts.userId, userId))
         .orderBy(desc(payouts.created_at));
 
-      return result.map(this.mapToResponseDto);
+      return result.map((payout) => this.mapToResponseDto(payout));
     } catch (error) {
       console.error('Error fetching payouts by user ID:', error);
       throw new Error('Failed to fetch payouts');
@@ -97,50 +120,38 @@ export class PayoutsService {
           date: payouts.date,
           created_at: payouts.created_at,
           updated_at: payouts.updated_at,
-          user: {
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            mobileNumber: users.mobileNumber,
-            referral_code: users.referral_code,
-          },
         })
         .from(payouts)
-        .innerJoin(users, eq(payouts.userId, users.id))
         .orderBy(desc(payouts.created_at));
 
-      return result.map(item => ({
-        ...this.mapToResponseDto(item),
-        user: item.user,
-      }));
+      return result.map((payout) => this.mapToResponseDto(payout));
     } catch (error) {
       console.error('Error fetching all payouts with users:', error);
       throw new Error('Failed to fetch payouts');
     }
   }
 
-  async updatePayoutStatus(payoutId: string, updatePayoutDto: UpdatePayoutDto): Promise<PayoutResponseDto | null> {
+  async updatePayoutStatus(
+    payoutId: string,
+    updatePayoutDto: UpdatePayoutDto,
+  ): Promise<PayoutResponseDto | null> {
     try {
-      const updateData: any = {
-        updated_at: new Date(),
-      };
-
-      if (updatePayoutDto.status !== undefined) {
-        updateData.status = updatePayoutDto.status;
-      }
-      if (updatePayoutDto.transactionId !== undefined) {
-        updateData.transactionId = updatePayoutDto.transactionId;
-      }
-      if (updatePayoutDto.description !== undefined) {
-        updateData.description = updatePayoutDto.description;
-      }
-
-      const [updatedPayout] = await db
+      const result = await db
         .update(payouts)
-        .set(updateData)
+        .set({
+          status: updatePayoutDto.status,
+          description: updatePayoutDto.description,
+          transactionId: updatePayoutDto.transactionId,
+          updated_at: new Date(),
+        })
         .where(eq(payouts.payoutId, payoutId))
         .returning();
 
+      if (result.length === 0) {
+        return null;
+      }
+
+      const updatedPayout = result[0];
       if (!updatedPayout) {
         return null;
       }
@@ -166,7 +177,12 @@ export class PayoutsService {
         return null;
       }
 
-      return this.mapToResponseDto(result[0]);
+      const payout = result[0];
+      if (!payout) {
+        return null;
+      }
+
+      return this.mapToResponseDto(payout);
     } catch (error) {
       console.error('Error fetching payout by ID:', error);
       if (error instanceof NotFoundException) {
@@ -202,20 +218,21 @@ export class PayoutsService {
         failedAmount: 0,
       };
 
-      result.forEach(payout => {
-        stats.totalAmount += payout.amount;
+      result.forEach((payout) => {
+        const amount = payout.amount || 0;
+        stats.totalAmount += amount;
         switch (payout.status) {
           case 'pending':
-            stats.pendingAmount += payout.amount;
+            stats.pendingAmount += amount;
             break;
           case 'completed':
-            stats.completedAmount += payout.amount;
+            stats.completedAmount += amount;
             break;
           case 'processing':
-            stats.processingAmount += payout.amount;
+            stats.processingAmount += amount;
             break;
           case 'failed':
-            stats.failedAmount += payout.amount;
+            stats.failedAmount += amount;
             break;
         }
       });
@@ -227,7 +244,20 @@ export class PayoutsService {
     }
   }
 
-  private mapToResponseDto(payout: any): PayoutResponseDto {
+  private mapToResponseDto(payout: {
+    id: number;
+    userId: number;
+    payoutId: string;
+    amount: number;
+    method: string;
+    status: 'pending' | 'completed' | 'failed' | 'processing';
+    description: string;
+    bankDetails: string;
+    transactionId?: string | null;
+    date: Date;
+    created_at: Date;
+    updated_at: Date;
+  }): PayoutResponseDto {
     return {
       id: payout.id,
       userId: payout.userId,
@@ -237,10 +267,10 @@ export class PayoutsService {
       status: payout.status,
       description: payout.description,
       bankDetails: payout.bankDetails,
-      transactionId: payout.transactionId,
+      transactionId: payout.transactionId || undefined,
       date: payout.date,
       created_at: payout.created_at,
       updated_at: payout.updated_at,
     };
   }
-} 
+}

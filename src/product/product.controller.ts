@@ -21,14 +21,21 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 
 @ApiTags('Products')
 @Controller('product')
 export class ProductController {
-  constructor(
-    private readonly productService: ProductService,
-  ) {}
+  constructor(private readonly productService: ProductService) {}
 
   @Post('/add-multiple')
   @UseGuards(JwtAuthGuard)
@@ -49,14 +56,22 @@ export class ProductController {
               productPrice: { type: 'number', example: 999.99 },
               description: { type: 'string', example: 'Product description' },
             },
-            required: ['productName', 'productCount', 'productCode', 'productPrice'],
+            required: [
+              'productName',
+              'productCount',
+              'productCode',
+              'productPrice',
+            ],
           },
         },
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Products added successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - products array is required' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - products array is required',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async addProducts(
     @Body()
@@ -100,24 +115,36 @@ export class ProductController {
         photo: {
           type: 'string',
           format: 'binary',
-          description: 'Product photo (max 5MB, formats: png, jpeg, jpg, gif, webp)',
+          description:
+            'Product photo (max 5MB, formats: png, jpeg, jpg, gif, webp)',
         },
       },
       required: ['productName', 'productCount', 'productCode', 'productPrice'],
     },
   })
-  @ApiResponse({ status: 201, description: 'Product added successfully with photo' })
-  @ApiResponse({ status: 400, description: 'Bad request - required fields missing' })
+  @ApiResponse({
+    status: 201,
+    description: 'Product added successfully with photo',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - required fields missing',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseInterceptors(FileInterceptor('photo', { storage: diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${extname(file.originalname)}`;
-      cb(null, uniqueName);
-    }
-  }) }))
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads/',
+        filename: (req, file, cb) => {
+          const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+          cb(null, uniqueName);
+        },
+      }),
+    }),
+  )
   async addProductWithPhoto(
-    @Body() productData: {
+    @Body()
+    productData: {
       productName: string;
       productCount: number;
       productCode: number;
@@ -135,7 +162,12 @@ export class ProductController {
     )
     photoFile?: Express.Multer.File,
   ) {
-    if (!productData.productName || !productData.productCount || !productData.productCode || !productData.productPrice) {
+    if (
+      !productData.productName ||
+      !productData.productCount ||
+      !productData.productCode ||
+      !productData.productPrice
+    ) {
       throw new BadRequestException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Product name, count, code, and price are required',
@@ -187,7 +219,10 @@ export class ProductController {
     },
   })
   @ApiResponse({ status: 201, description: 'Order placed successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - userId and productName required' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - userId and productName required',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async orderProduct(
     @Body() body: { userId: number; productName: string; quantity?: number },
@@ -204,13 +239,16 @@ export class ProductController {
 
     return this.productService.orderProduct(userId, productName, quantity || 1);
   }
-  
+
   @Get('/order-history/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get order history for a user' })
   @ApiParam({ name: 'userId', description: 'User ID', example: '1' })
-  @ApiResponse({ status: 200, description: 'Order history retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order history retrieved successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid userId' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getOrderHistory(@Param('userId') userId: string) {
@@ -231,12 +269,19 @@ export class ProductController {
     schema: {
       type: 'object',
       properties: {
-        status: { type: 'string', example: 'COMPLETED', enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'] },
+        status: {
+          type: 'string',
+          example: 'COMPLETED',
+          enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'],
+        },
       },
       required: ['status'],
     },
   })
-  @ApiResponse({ status: 200, description: 'Order status updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order status updated successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid order ID or status' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Order not found' })
@@ -324,9 +369,22 @@ export class ProductController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all order details with pagination' })
-  @ApiQuery({ name: 'page', description: 'Page number', example: '1', required: false })
-  @ApiQuery({ name: 'limit', description: 'Items per page', example: '10', required: false })
-  @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+  @ApiQuery({
+    name: 'page',
+    description: 'Page number',
+    example: '1',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Items per page',
+    example: '10',
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order details retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getAllOrderDetails(
     @Query('page') page = '1',

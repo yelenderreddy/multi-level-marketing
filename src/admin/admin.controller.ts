@@ -21,7 +21,7 @@ export class AdminController {
   ) {}
 
   @Post('login')
-  async login(@Body() body: { username: string; password: string }) {
+  login(@Body() body: { username: string; password: string }) {
     const { username, password } = body;
     // Hardcoded admin credentials
     const ADMIN_USERNAME = 'admin';

@@ -8,12 +8,18 @@ import {
   HttpStatus,
   UseGuards,
   Query,
-  Put,
-  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Users')
 @Controller('api/users')
@@ -34,7 +40,11 @@ export class UsersController {
         address: { type: 'string', example: '123 Main St' },
         referralCode: { type: 'string', example: 'REF123' },
         referredByCode: { type: 'string', example: 'REF456' },
-        paymentStatus: { type: 'string', enum: ['PENDING', 'PAID'], example: 'PENDING' },
+        paymentStatus: {
+          type: 'string',
+          enum: ['PENDING', 'PAID'],
+          example: 'PENDING',
+        },
         reward: { type: 'string', example: '100' },
         referralCount: { type: 'number', example: 0 },
       },
@@ -150,8 +160,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get users referred by a specific referral code' })
-  @ApiParam({ name: 'referralCode', description: 'Referral code', example: 'REF123' })
-  @ApiResponse({ status: 200, description: 'Referred users retrieved successfully' })
+  @ApiParam({
+    name: 'referralCode',
+    description: 'Referral code',
+    example: 'REF123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Referred users retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUsersReferredBy(@Param('referralCode') referralCode: string) {
     return this.usersService.getUsersReferredBy(referralCode);
@@ -161,8 +178,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get referral statistics for a referral code' })
-  @ApiParam({ name: 'referralCode', description: 'Referral code', example: 'REF123' })
-  @ApiResponse({ status: 200, description: 'Referral stats retrieved successfully' })
+  @ApiParam({
+    name: 'referralCode',
+    description: 'Referral code',
+    example: 'REF123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Referral stats retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getReferralStats(@Param('referralCode') referralCode: string) {
     return this.usersService.getReferralStats(referralCode);
@@ -180,11 +204,18 @@ export class UsersController {
         gender: { type: 'string', example: 'Male' },
         referral_code: { type: 'string', example: 'REF123' },
         referred_by_code: { type: 'string', example: 'REF456' },
-        payment_status: { type: 'string', enum: ['PENDING', 'PAID'], example: 'PAID' },
+        payment_status: {
+          type: 'string',
+          enum: ['PENDING', 'PAID'],
+          example: 'PAID',
+        },
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'User details updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User details updated successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid user ID' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -215,8 +246,18 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all users with pagination' })
-  @ApiQuery({ name: 'page', description: 'Page number', example: '1', required: false })
-  @ApiQuery({ name: 'limit', description: 'Items per page', example: '10', required: false })
+  @ApiQuery({
+    name: 'page',
+    description: 'Page number',
+    example: '1',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Items per page',
+    example: '10',
+    required: false,
+  })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getAllUsers(@Query('page') page = '1', @Query('limit') limit = '10') {
@@ -261,7 +302,10 @@ export class UsersController {
     },
   })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid user ID or missing password' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID or missing password',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserPassword(
@@ -285,7 +329,10 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update wallet balance for a user' })
   @ApiParam({ name: 'id', description: 'User ID', example: '1' })
-  @ApiResponse({ status: 200, description: 'Wallet balance updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Wallet balance updated successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid user ID' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -305,8 +352,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update wallet balance by referral code' })
-  @ApiParam({ name: 'referralCode', description: 'Referral code', example: 'REF123' })
-  @ApiResponse({ status: 200, description: 'Wallet balance updated successfully' })
+  @ApiParam({
+    name: 'referralCode',
+    description: 'Referral code',
+    example: 'REF123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Wallet balance updated successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateWalletBalanceByReferralCode(
     @Param('referralCode') referralCode: string,
@@ -319,7 +373,10 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get wallet balance for a user' })
   @ApiParam({ name: 'id', description: 'User ID', example: '1' })
-  @ApiResponse({ status: 200, description: 'Wallet balance retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Wallet balance retrieved successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid user ID' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })

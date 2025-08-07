@@ -3,6 +3,7 @@ import { Body, Controller, Post, Req, Res, HttpStatus } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
 
 @Controller('api/payments')
 export class RazorpayController {
@@ -53,7 +54,7 @@ export class RazorpayController {
    * Razorpay Webhook
    */
   @Post('/webhook')
-  async handleWebhook(@Req() req, @Res() res) {
+  async handleWebhook(@Req() req: Request, @Res() res: Response) {
     const webhookSecret = this.configService.get<string>(
       'RAZORPAY_WEBHOOK_SECRET',
     );
@@ -62,7 +63,7 @@ export class RazorpayController {
       return res.status(500).send('Webhook secret is not configured');
     }
 
-    const signature = req.headers['x-razorpay-signature'];
+    const signature = req.headers['x-razorpay-signature'] as string;
 
     const body = JSON.stringify(req.body);
 
@@ -78,14 +79,17 @@ export class RazorpayController {
     const event = req.body.event;
 
     if (event === 'payment.captured') {
-      const paymentEntity = req.body.payload.payment.entity;
+      const payload = req.body.payload;
+      const paymentEntity = payload?.payment?.entity;
 
-      console.log(`✅ Payment Captured: ${paymentEntity.id}`);
+      if (paymentEntity) {
+        console.log(`✅ Payment Captured: ${paymentEntity.id}`);
 
-      await this.razorpayService.markPaymentAsPaid(
-        paymentEntity.order_id,
-        paymentEntity.id,
-      );
+        await this.razorpayService.markPaymentAsPaid(
+          paymentEntity.order_id as string,
+          paymentEntity.id as string,
+        );
+      }
     }
 
     res.status(200).send('Webhook received');

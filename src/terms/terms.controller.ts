@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  HttpStatus,
+} from '@nestjs/common';
 import { TermsService } from './terms.service';
 import { CreateTermsDto, UpdateTermsDto } from './terms.dto';
 
@@ -47,8 +56,14 @@ export class TermsController {
   }
 
   @Put(':id')
-  async updateTerms(@Param('id') id: string, @Body() updateTermsDto: UpdateTermsDto) {
-    const terms = await this.termsService.updateTerms(parseInt(id), updateTermsDto);
+  async updateTerms(
+    @Param('id') id: string,
+    @Body() updateTermsDto: UpdateTermsDto,
+  ) {
+    const terms = await this.termsService.updateTerms(
+      parseInt(id),
+      updateTermsDto,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'Terms and conditions updated successfully',
@@ -65,4 +80,4 @@ export class TermsController {
       data: null,
     };
   }
-} 
+}

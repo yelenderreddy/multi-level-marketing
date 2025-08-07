@@ -1,7 +1,11 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
-import { PaymentResponseDto, PaymentStatsDto } from './payments.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('payments')
@@ -16,11 +20,13 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getPaymentsByUserId(@Param('userId') userId: string) {
-    const payments = await this.paymentsService.getPaymentsByUserId(parseInt(userId));
+    const payments = await this.paymentsService.getPaymentsByUserId(
+      parseInt(userId),
+    );
     return {
       statusCode: 200,
       message: 'Payments retrieved successfully',
-      data: payments
+      data: payments,
     };
   }
 
@@ -32,19 +38,24 @@ export class PaymentsController {
     return {
       statusCode: 200,
       message: 'Payments retrieved successfully',
-      data: payments
+      data: payments,
     };
   }
 
   @Get('stats/:userId')
   @ApiOperation({ summary: 'Get payment statistics by user ID' })
-  @ApiResponse({ status: 200, description: 'Payment stats retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment stats retrieved successfully',
+  })
   async getPaymentStatsByUserId(@Param('userId') userId: string) {
-    const stats = await this.paymentsService.getPaymentStatsByUserId(parseInt(userId));
+    const stats = await this.paymentsService.getPaymentStatsByUserId(
+      parseInt(userId),
+    );
     return {
       statusCode: 200,
       message: 'Payment stats retrieved successfully',
-      data: stats
+      data: stats,
     };
   }
 
@@ -53,11 +64,13 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Payment retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
   async getPaymentById(@Param('paymentId') paymentId: string) {
-    const payment = await this.paymentsService.getPaymentById(parseInt(paymentId));
+    const payment = await this.paymentsService.getPaymentById(
+      parseInt(paymentId),
+    );
     return {
       statusCode: 200,
       message: 'Payment retrieved successfully',
-      data: payment
+      data: payment,
     };
   }
-} 
+}

@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Put, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PayoutsService } from './payouts.service';
-import { CreatePayoutDto, UpdatePayoutDto, PayoutResponseDto } from './payouts.dto';
+import { CreatePayoutDto, UpdatePayoutDto } from './payouts.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('payouts')
@@ -21,7 +34,7 @@ export class PayoutsController {
     return {
       statusCode: 201,
       message: 'Payout created successfully',
-      data: payout
+      data: payout,
     };
   }
 
@@ -30,11 +43,13 @@ export class PayoutsController {
   @ApiResponse({ status: 200, description: 'Payouts retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getPayoutsByUserId(@Param('userId') userId: string) {
-    const payouts = await this.payoutsService.getPayoutsByUserId(parseInt(userId));
+    const payouts = await this.payoutsService.getPayoutsByUserId(
+      parseInt(userId),
+    );
     return {
       statusCode: 200,
       message: 'Payouts retrieved successfully',
-      data: payouts
+      data: payouts,
     };
   }
 
@@ -46,19 +61,24 @@ export class PayoutsController {
     return {
       statusCode: 200,
       message: 'Payouts retrieved successfully',
-      data: payouts
+      data: payouts,
     };
   }
 
   @Get('stats/:userId')
   @ApiOperation({ summary: 'Get payout statistics by user ID' })
-  @ApiResponse({ status: 200, description: 'Payout stats retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payout stats retrieved successfully',
+  })
   async getPayoutStatsByUserId(@Param('userId') userId: string) {
-    const stats = await this.payoutsService.getPayoutStatsByUserId(parseInt(userId));
+    const stats = await this.payoutsService.getPayoutStatsByUserId(
+      parseInt(userId),
+    );
     return {
       statusCode: 200,
       message: 'Payout stats retrieved successfully',
-      data: stats
+      data: stats,
     };
   }
 
@@ -71,23 +91,29 @@ export class PayoutsController {
     return {
       statusCode: 200,
       message: 'Payout retrieved successfully',
-      data: payout
+      data: payout,
     };
   }
 
   @Put(':payoutId/status')
   @ApiOperation({ summary: 'Update payout status' })
-  @ApiResponse({ status: 200, description: 'Payout status updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payout status updated successfully',
+  })
   @ApiResponse({ status: 404, description: 'Payout not found' })
   async updatePayoutStatus(
     @Param('payoutId') payoutId: string,
-    @Body() updatePayoutDto: UpdatePayoutDto
+    @Body() updatePayoutDto: UpdatePayoutDto,
   ) {
-    const payout = await this.payoutsService.updatePayoutStatus(payoutId, updatePayoutDto);
+    const payout = await this.payoutsService.updatePayoutStatus(
+      payoutId,
+      updatePayoutDto,
+    );
     return {
       statusCode: 200,
       message: 'Payout status updated successfully',
-      data: payout
+      data: payout,
     };
   }
-} 
+}

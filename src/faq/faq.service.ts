@@ -1,9 +1,7 @@
 import {
   Injectable,
-  NotFoundException,
   InternalServerErrorException,
   HttpStatus,
-  HttpException,
 } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { faqs } from '../db/schemas/faqSchema';
@@ -26,15 +24,23 @@ export class FaqService {
         })
         .returning();
 
+      const createdFaq = result[0];
+      if (!createdFaq) {
+        throw new InternalServerErrorException('Failed to create FAQ');
+      }
+
       return {
         statusCode: HttpStatus.CREATED,
         message: 'FAQ created successfully',
-        data: result[0],
+        data: createdFaq,
       };
     } catch (err) {
-      throw new InternalServerErrorException(
-        err.message || 'Failed to create FAQ',
-      );
+      if (err instanceof Error) {
+        throw new InternalServerErrorException(
+          err.message || 'Failed to create FAQ',
+        );
+      }
+      throw new InternalServerErrorException('Failed to create FAQ');
     }
   }
 
@@ -51,9 +57,12 @@ export class FaqService {
         data: result,
       };
     } catch (err) {
-      throw new InternalServerErrorException(
-        err.message || 'Failed to fetch FAQs',
-      );
+      if (err instanceof Error) {
+        throw new InternalServerErrorException(
+          err.message || 'Failed to fetch FAQs',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch FAQs');
     }
   }
 
@@ -85,15 +94,23 @@ export class FaqService {
         .where(eq(faqs.id, id))
         .returning();
 
+      const updatedFaq = result[0];
+      if (!updatedFaq) {
+        throw new InternalServerErrorException('Failed to update FAQ');
+      }
+
       return {
         statusCode: HttpStatus.OK,
         message: 'FAQ updated successfully',
-        data: result[0],
+        data: updatedFaq,
       };
     } catch (err) {
-      throw new InternalServerErrorException(
-        err.message || 'Failed to update FAQ',
-      );
+      if (err instanceof Error) {
+        throw new InternalServerErrorException(
+          err.message || 'Failed to update FAQ',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update FAQ');
     }
   }
 
@@ -122,15 +139,23 @@ export class FaqService {
         .where(eq(faqs.id, id))
         .returning();
 
+      const deletedFaq = result[0];
+      if (!deletedFaq) {
+        throw new InternalServerErrorException('Failed to delete FAQ');
+      }
+
       return {
         statusCode: HttpStatus.OK,
         message: 'FAQ deleted (soft) successfully',
-        data: result[0],
+        data: deletedFaq,
       };
     } catch (err) {
-      throw new InternalServerErrorException(
-        err.message || 'Failed to delete FAQ',
-      );
+      if (err instanceof Error) {
+        throw new InternalServerErrorException(
+          err.message || 'Failed to delete FAQ',
+        );
+      }
+      throw new InternalServerErrorException('Failed to delete FAQ');
     }
   }
 }

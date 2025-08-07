@@ -7,7 +7,10 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 
-export const redeemStatusEnum = pgEnum('redeem_status', ['processing', 'deposited']);
+export const redeemStatusEnum = pgEnum('redeem_status', [
+  'processing',
+  'deposited',
+]);
 
 export const redeemHistory = pgTable('redeem_history', {
   id: serial('id').primaryKey().notNull(),
@@ -19,4 +22,4 @@ export const redeemHistory = pgTable('redeem_history', {
     .defaultNow()
     .notNull(),
   depositedAt: timestamp('deposited_at', { withTimezone: true }),
-}); 
+});

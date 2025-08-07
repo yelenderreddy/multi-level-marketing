@@ -7,4 +7,4 @@ import { PrivacyService } from './privacy.service';
   providers: [PrivacyService],
   exports: [PrivacyService],
 })
-export class PrivacyModule {} 
+export class PrivacyModule {}

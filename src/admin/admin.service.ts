@@ -9,7 +9,6 @@ import { db } from '../db/dbConnection/db.connect';
 import { rewardTargets } from '../db/schemas/rewardTargetSchema';
 import { eq } from 'drizzle-orm';
 import { users } from '../db/schemas/userSchema';
-import { and } from 'drizzle-orm';
 
 @Injectable()
 export class AdminService {
@@ -25,9 +24,12 @@ export class AdminService {
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to add reward target',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to add reward target',
+        );
+      }
+      throw new InternalServerErrorException('Failed to add reward target');
     }
   }
 
@@ -40,9 +42,12 @@ export class AdminService {
         data: result,
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch reward targets',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch reward targets',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch reward targets');
     }
   }
 
@@ -68,9 +73,12 @@ export class AdminService {
         data: result[0],
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to update reward target',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update reward target',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update reward target');
     }
   }
 
@@ -93,9 +101,12 @@ export class AdminService {
         data: { id },
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to delete reward target',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to delete reward target',
+        );
+      }
+      throw new InternalServerErrorException('Failed to delete reward target');
     }
   }
 
@@ -134,8 +145,13 @@ export class AdminService {
         pageSize,
       };
     } catch (error) {
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch users by referralCount',
+        );
+      }
       throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch users by referralCount',
+        'Failed to fetch users by referralCount',
       );
     }
   }
@@ -158,8 +174,16 @@ export class AdminService {
             data: null,
           };
         }
+        const user = userResult[0];
+        if (!user) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'User not found',
+            data: null,
+          };
+        }
         // If current reward is 'approved', replace with 'delivered'
-        if (userResult[0].reward === 'approved') {
+        if (user.reward === 'approved') {
           rewardValue = 'delivered';
         } else {
           rewardValue = reward || 'delivered';
@@ -183,8 +207,13 @@ export class AdminService {
         data: result[0],
       };
     } catch (error) {
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update reward status for user',
+        );
+      }
       throw new InternalServerErrorException(
-        error?.message || 'Failed to update reward status for user',
+        'Failed to update reward status for user',
       );
     }
   }

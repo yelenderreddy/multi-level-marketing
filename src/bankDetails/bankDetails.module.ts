@@ -7,4 +7,4 @@ import { BankDetailsService } from './bankDetails.service';
   providers: [BankDetailsService],
   exports: [BankDetailsService],
 })
-export class BankDetailsModule {} 
+export class BankDetailsModule {}

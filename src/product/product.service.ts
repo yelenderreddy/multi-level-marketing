@@ -63,9 +63,12 @@ export class ProductService {
     } catch (error) {
       console.error(error);
 
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to create products',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to create products',
+        );
+      }
+      throw new InternalServerErrorException('Failed to create products');
     }
   }
 
@@ -103,24 +106,37 @@ export class ProductService {
         photo: photoFilename,
       };
 
-      const result = await db.insert(products).values(productToInsert).returning();
+      const result = await db
+        .insert(products)
+        .values(productToInsert)
+        .returning();
 
       // Add photo URL to the response
-      const productWithPhotoUrl = result.map(product => ({
+      const productWithPhotoUrl = result.map((product) => ({
         ...product,
-        photoUrl: product.photo ? this.fileUploadService.getFileUrl(product.photo) : null,
+        photoUrl: product.photo
+          ? this.fileUploadService.getFileUrl(product.photo)
+          : null,
       }));
+
+      const createdProduct = productWithPhotoUrl[0];
+      if (!createdProduct) {
+        throw new InternalServerErrorException('Failed to create product');
+      }
 
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Product created successfully',
-        data: productWithPhotoUrl[0],
+        data: createdProduct,
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to create product',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to create product',
+        );
+      }
+      throw new InternalServerErrorException('Failed to create product');
     }
   }
 
@@ -137,21 +153,29 @@ export class ProductService {
         .orderBy(desc(products.created_at));
 
       // Add photo URLs to each product
-      const productsWithPhotoUrls = result.map(product => ({
+      const productsWithPhotoUrls = result.map((product) => ({
         ...product,
-        photoUrl: product.photo ? this.fileUploadService.getFileUrl(product.photo) : null,
+        photoUrl: product.photo
+          ? this.fileUploadService.getFileUrl(product.photo)
+          : null,
       }));
 
       return {
         statusCode: HttpStatus.OK,
-        message: result.length === 0 ? 'No products found' : 'Products fetched successfully',
+        message:
+          result.length === 0
+            ? 'No products found'
+            : 'Products fetched successfully',
         data: productsWithPhotoUrls,
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch products',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch products',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch products');
     }
   }
 
@@ -179,10 +203,13 @@ export class ProductService {
       }
 
       const product = result[0];
+      if (!product) {
+        throw new NotFoundException(`Product "${productName}" not found`);
+      }
 
-      if (product.productCount < quantity) {
+      if ((product.productCount || 0) < quantity) {
         throw new HttpException(
-          `Only ${product.productCount} units of "${productName}" are available`,
+          `Only ${product.productCount || 0} units of "${productName}" are available`,
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -190,7 +217,7 @@ export class ProductService {
       // decrement the count
       await db
         .update(products)
-        .set({ productCount: product.productCount - quantity })
+        .set({ productCount: (product.productCount || 0) - quantity })
         .where(eq(products.id, product.id));
 
       // record in order_history
@@ -210,14 +237,17 @@ export class ProductService {
           productName: product.productName,
           productPrice: product.productPrice,
           orderedQuantity: quantity,
-          remainingStock: product.productCount - quantity,
+          remainingStock: (product.productCount || 0) - quantity,
         },
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to order product',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to order product',
+        );
+      }
+      throw new InternalServerErrorException('Failed to order product');
     }
   }
 
@@ -239,53 +269,33 @@ export class ProductService {
         .where(eq(orderHistory.userId, userId))
         .orderBy(desc(orderHistory.orderedAt));
 
-      // For each order, fetch the product price separately
-      const transformedOrders = await Promise.all(orders.map(async (order) => {
-        let productPrice = 0;
-        
-        try {
-          // Fetch the product price
-          const productResult = await db
-            .select({ productPrice: products.productPrice })
-            .from(products)
-            .where(eq(products.id, order.productId))
-            .limit(1);
-          
-          if (productResult.length > 0) {
-            productPrice = productResult[0].productPrice;
-          } else {
-            console.warn(`Product with ID ${order.productId} not found for order ${order.id}. Creating a default product.`);
-            
-            // If product doesn't exist, create a default one
-            try {
-              const newProduct = await db
-                .insert(products)
-                .values({
-                  productName: order.productName || 'Default Product',
-                  productPrice: 100, // Default price
-                  productCount: 10,
-                  productCode: 1000 + order.productId,
-                  description: 'Auto-created product for existing order',
-                })
-                .returning();
-              
-              if (newProduct.length > 0) {
-                productPrice = newProduct[0].productPrice;
-                console.log(`Created default product with ID ${newProduct[0].id} and price ${productPrice}`);
-              }
-            } catch (createError) {
-              console.error(`Failed to create default product for order ${order.id}:`, createError);
+      // Transform orders to include product prices
+      const transformedOrders = await Promise.all(
+        orders.map(async (order) => {
+          let productPrice = 0;
+          try {
+            const productResult = await db
+              .select({ productPrice: products.productPrice })
+              .from(products)
+              .where(eq(products.id, order.productId))
+              .limit(1);
+
+            if (productResult.length > 0 && productResult[0]) {
+              productPrice = productResult[0].productPrice || 0;
             }
+          } catch (error) {
+            console.error(
+              `Error fetching product price for productId ${order.productId}:`,
+              error,
+            );
           }
-        } catch (error) {
-          console.error(`Error fetching product price for productId ${order.productId}:`, error);
-        }
-        
-        return {
-          ...order,
-          productPrice: productPrice,
-        };
-      }));
+
+          return {
+            ...order,
+            productPrice: productPrice,
+          };
+        }),
+      );
 
       return {
         statusCode: HttpStatus.OK,
@@ -294,9 +304,12 @@ export class ProductService {
       };
     } catch (error) {
       console.error('Error fetching order history:', error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch order history',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch order history',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch order history');
     }
   }
 
@@ -310,15 +323,22 @@ export class ProductService {
       if (!result || result.length === 0) {
         throw new NotFoundException('Order not found');
       }
+      const updatedOrder = result[0];
+      if (!updatedOrder) {
+        throw new NotFoundException('Order not found');
+      }
       return {
         statusCode: HttpStatus.OK,
         message: 'Order status updated successfully',
-        data: result[0],
+        data: updatedOrder,
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to update order status',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update order status',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update order status');
     }
   }
 
@@ -330,7 +350,7 @@ export class ProductService {
         .select()
         .from(products)
         .where(eq(products.id, productId));
-      
+
       if (!result || result.length === 0) {
         return {
           statusCode: HttpStatus.OK,
@@ -338,13 +358,24 @@ export class ProductService {
           data: null,
         };
       }
-      
+
+      const product = result[0];
+      if (!product) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Product not found',
+          data: null,
+        };
+      }
+
       // Add photo URL to the product
       const productWithPhotoUrl = {
-        ...result[0],
-        photoUrl: result[0].photo ? this.fileUploadService.getFileUrl(result[0].photo) : null,
+        ...product,
+        photoUrl: product.photo
+          ? this.fileUploadService.getFileUrl(product.photo)
+          : null,
       };
-      
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Product fetched successfully',
@@ -352,9 +383,12 @@ export class ProductService {
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch product',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch product',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch product');
     }
   }
 
@@ -374,19 +408,29 @@ export class ProductService {
         .set(updates)
         .where(eq(products.id, productId))
         .returning();
+
       if (!result || result.length === 0) {
         throw new NotFoundException('Product not found');
       }
+
+      const updatedProduct = result[0];
+      if (!updatedProduct) {
+        throw new NotFoundException('Product not found');
+      }
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Product updated successfully',
-        data: result[0],
+        data: updatedProduct,
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to update product',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update product',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update product');
     }
   }
 
@@ -403,9 +447,14 @@ export class ProductService {
         throw new NotFoundException('Product not found');
       }
 
+      const productData = product[0];
+      if (!productData) {
+        throw new NotFoundException('Product not found');
+      }
+
       // Delete the photo file if it exists
-      if (product[0].photo) {
-        await this.fileUploadService.deleteFile(product[0].photo);
+      if (productData.photo) {
+        await this.fileUploadService.deleteFile(productData.photo);
       }
 
       // Delete the product
@@ -414,16 +463,24 @@ export class ProductService {
         .where(eq(products.id, productId))
         .returning();
 
+      const deletedProduct = deletedRows[0];
+      if (!deletedProduct) {
+        throw new NotFoundException('Product not found');
+      }
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Product deleted successfully',
-        data: deletedRows[0], // optional: return deleted product info
+        data: deletedProduct, // optional: return deleted product info
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to delete product',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to delete product',
+        );
+      }
+      throw new InternalServerErrorException('Failed to delete product');
     }
   }
 
@@ -476,9 +533,31 @@ export class ProductService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: result.length === 0 ? 'No order history found' : 'Order details fetched successfully',
+        message:
+          result.length === 0
+            ? 'No order history found'
+            : 'Order details fetched successfully',
         data: {
-          orders: result,
+          orders: result.map((item) => ({
+            id: item.id,
+            userId: item.userId,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            status: item.status,
+            orderedAt: item.orderedAt,
+            userName: item.userName,
+            userEmail: item.userEmail,
+            userMobile: item.userMobile,
+            userAddress: item.userAddress,
+            userGender: item.userGender,
+            userReferralCode: item.userReferralCode,
+            userPaymentStatus: item.userPaymentStatus,
+            productPrice: item.productPrice,
+            productCount: item.productCount,
+            productStatus: item.productStatus,
+            productCode: item.productCode,
+          })),
           pagination: {
             page,
             limit,
@@ -491,9 +570,12 @@ export class ProductService {
       };
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        error?.message || 'Failed to fetch order details',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to fetch order details',
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch order details');
     }
   }
 }

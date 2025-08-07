@@ -2,7 +2,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  ConflictException,
   UnauthorizedException,
   HttpStatus,
 } from '@nestjs/common';
@@ -11,10 +10,7 @@ import { users } from '../db/schemas/userSchema';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { endOfMonth, startOfMonth, startOfDay, endOfDay } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
-
-const TIMEZONE = 'America/Los_Angeles';
 
 @Injectable()
 export class UsersService {
@@ -93,16 +89,18 @@ export class UsersService {
         throw new NotFoundException(`Invalid referral code: ${referralCode}`);
       }
 
-      finalReferredByCode = referrerResult[0].referral_code;
+      const referrer = referrerResult[0];
+      if (!referrer) {
+        throw new NotFoundException(`Invalid referral code: ${referralCode}`);
+      }
+
+      finalReferredByCode = referrer.referral_code;
       // Increment referralCount for the referrer
-      const currentCount = referrerResult[0].referralCount || 0;
-      const currentWalletBalance = referrerResult[0].wallet_balance || 0;
-      const referralCountAtLastRedeem = referrerResult[0].referralCountAtLastRedeem || 0;
+      const currentCount = referrer.referralCount || 0;
+      const currentWalletBalance = referrer.wallet_balance || 0;
       const newReferralCount = currentCount + 1;
-      
+
       // Calculate new wallet balance: existing balance + (new referrals since last redeem * 250)
-      const newReferralsSinceLastRedeem = newReferralCount - referralCountAtLastRedeem;
-      const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
       const newWalletBalance = currentWalletBalance + 250; // Add 250 for this new referral
 
       await db
@@ -120,22 +118,24 @@ export class UsersService {
         .from(users)
         .where(eq(users.referral_code, referredByCode));
       if (referrerResult && referrerResult.length > 0) {
-        const currentCount = referrerResult[0].referralCount || 0;
-        const currentWalletBalance = referrerResult[0].wallet_balance || 0;
-        const referralCountAtLastRedeem = referrerResult[0].referralCountAtLastRedeem || 0;
-        const newReferralCount = currentCount + 1;
-        
-        // Calculate new wallet balance: existing balance + 250 for this new referral
-        const newWalletBalance = currentWalletBalance + 250;
+        const referrer = referrerResult[0];
+        if (referrer) {
+          const currentCount = referrer.referralCount || 0;
+          const currentWalletBalance = referrer.wallet_balance || 0;
+          const newReferralCount = currentCount + 1;
 
-        await db
-          .update(users)
-          .set({
-            referralCount: newReferralCount,
-            wallet_balance: newWalletBalance,
-            updated_at: new Date(),
-          })
-          .where(eq(users.referral_code, referredByCode));
+          // Calculate new wallet balance: existing balance + 250 for this new referral
+          const newWalletBalance = currentWalletBalance + 250;
+
+          await db
+            .update(users)
+            .set({
+              referralCount: newReferralCount,
+              wallet_balance: newWalletBalance,
+              updated_at: new Date(),
+            })
+            .where(eq(users.referral_code, referredByCode));
+        }
       }
       finalReferredByCode = referredByCode;
     }
@@ -158,6 +158,9 @@ export class UsersService {
       .returning();
 
     const createdUser = result[0];
+    if (!createdUser) {
+      throw new InternalServerErrorException('Failed to create user');
+    }
 
     return {
       statusCode: HttpStatus.CREATED,
@@ -191,6 +194,14 @@ export class UsersService {
     }
 
     const user = userResult[0];
+    if (!user) {
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User not found',
+        data: null,
+      };
+    }
+
     const decryptedPassword = this.decryptPassword(user.password_hash);
 
     return {
@@ -208,7 +219,7 @@ export class UsersService {
         referral_code: user.referral_code,
         referred_by: user.referred_by_code,
         payment_status: user.payment_status,
-        wallet_balance:user.wallet_balance,
+        wallet_balance: user.wallet_balance,
         created_at: user.created_at,
       },
     };
@@ -225,6 +236,10 @@ export class UsersService {
     }
 
     const user = userResult[0];
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
     const decryptedPassword = this.decryptPassword(user.password_hash);
 
     if (decryptedPassword !== password) {
@@ -350,7 +365,12 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      const updatePayload: any = {};
+      const user = userResult[0];
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const updatePayload: Record<string, unknown> = {};
 
       if (updates.address !== undefined) {
         updatePayload.address = updates.address;
@@ -384,15 +404,23 @@ export class UsersService {
         .where(eq(users.id, id))
         .returning();
 
+      const updatedUser = updated[0];
+      if (!updatedUser) {
+        throw new InternalServerErrorException('Failed to update user');
+      }
+
       return {
         statusCode: HttpStatus.OK,
         message: 'User updated successfully',
-        data: updated[0],
+        data: updatedUser,
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Failed to update user',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update user',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update user');
     }
   }
 
@@ -409,23 +437,35 @@ export class UsersService {
   }
 
   async updateUserPassword(id: number, newPassword: string) {
-    if (!newPassword) {
-      throw new InternalServerErrorException('New password is required');
+    try {
+      const encryptedPassword = this.encryptPassword(newPassword);
+
+      const result = await db
+        .update(users)
+        .set({
+          password_hash: encryptedPassword,
+          updated_at: new Date(),
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (!result || result.length === 0) {
+        throw new NotFoundException('User not found');
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Password updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update password',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update password');
     }
-    const encryptedPassword = this.encryptPassword(newPassword);
-    const result = await db
-      .update(users)
-      .set({ password_hash: encryptedPassword })
-      .where(eq(users.id, id))
-      .returning();
-    if (!result || result.length === 0) {
-      throw new NotFoundException('User not found');
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Password updated successfully',
-      data: { id },
-    };
   }
 
   async getAllUsers(page = 1, limit = 10) {
@@ -454,10 +494,10 @@ export class UsersService {
     try {
       // Get user's current data
       const userResult = await db
-        .select({ 
+        .select({
           referralCount: users.referralCount,
           referralCountAtLastRedeem: users.referralCountAtLastRedeem,
-          wallet_balance: users.wallet_balance
+          wallet_balance: users.wallet_balance,
         })
         .from(users)
         .where(eq(users.id, userId));
@@ -466,13 +506,19 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      const currentReferralCount = userResult[0].referralCount || 0;
-      const referralCountAtLastRedeem = userResult[0].referralCountAtLastRedeem || 0;
-      const currentWalletBalance = userResult[0].wallet_balance || 0;
+      const user = userResult[0];
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const currentReferralCount = user.referralCount || 0;
+      const referralCountAtLastRedeem = user.referralCountAtLastRedeem || 0;
+      const currentWalletBalance = user.wallet_balance || 0;
 
       // Calculate new referrals since last redeem
-      const newReferralsSinceLastRedeem = currentReferralCount - referralCountAtLastRedeem;
-      
+      const newReferralsSinceLastRedeem =
+        currentReferralCount - referralCountAtLastRedeem;
+
       // Calculate wallet balance: existing balance + (new referrals * 250)
       const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
       const newWalletBalance = currentWalletBalance + newReferralsEarnings;
@@ -486,6 +532,13 @@ export class UsersService {
         })
         .where(eq(users.id, userId))
         .returning();
+
+      const updatedUserData = updatedUser[0];
+      if (!updatedUserData) {
+        throw new InternalServerErrorException(
+          'Failed to update wallet balance',
+        );
+      }
 
       return {
         statusCode: HttpStatus.OK,
@@ -496,13 +549,16 @@ export class UsersService {
           newReferralsSinceLastRedeem,
           newReferralsEarnings,
           walletBalance: newWalletBalance,
-          user: updatedUser[0],
+          user: updatedUserData,
         },
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Failed to update wallet balance',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update wallet balance',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update wallet balance');
     }
   }
 
@@ -510,11 +566,11 @@ export class UsersService {
     try {
       // Get user by referral code
       const userResult = await db
-        .select({ 
-          id: users.id, 
+        .select({
+          id: users.id,
           referralCount: users.referralCount,
           referralCountAtLastRedeem: users.referralCountAtLastRedeem,
-          wallet_balance: users.wallet_balance
+          wallet_balance: users.wallet_balance,
         })
         .from(users)
         .where(eq(users.referral_code, referralCode));
@@ -523,14 +579,20 @@ export class UsersService {
         throw new NotFoundException('User not found with this referral code');
       }
 
-      const userId = userResult[0].id;
-      const currentReferralCount = userResult[0].referralCount || 0;
-      const referralCountAtLastRedeem = userResult[0].referralCountAtLastRedeem || 0;
-      const currentWalletBalance = userResult[0].wallet_balance || 0;
+      const user = userResult[0];
+      if (!user) {
+        throw new NotFoundException('User not found with this referral code');
+      }
+
+      const userId = user.id;
+      const currentReferralCount = user.referralCount || 0;
+      const referralCountAtLastRedeem = user.referralCountAtLastRedeem || 0;
+      const currentWalletBalance = user.wallet_balance || 0;
 
       // Calculate new referrals since last redeem
-      const newReferralsSinceLastRedeem = currentReferralCount - referralCountAtLastRedeem;
-      
+      const newReferralsSinceLastRedeem =
+        currentReferralCount - referralCountAtLastRedeem;
+
       // Calculate wallet balance: existing balance + (new referrals * 250)
       const newReferralsEarnings = newReferralsSinceLastRedeem * 250;
       const newWalletBalance = currentWalletBalance + newReferralsEarnings;
@@ -544,6 +606,13 @@ export class UsersService {
         })
         .where(eq(users.id, userId))
         .returning();
+
+      const updatedUserData = updatedUser[0];
+      if (!updatedUserData) {
+        throw new InternalServerErrorException(
+          'Failed to update wallet balance',
+        );
+      }
 
       return {
         statusCode: HttpStatus.OK,
@@ -555,13 +624,16 @@ export class UsersService {
           newReferralsSinceLastRedeem,
           newReferralsEarnings,
           walletBalance: newWalletBalance,
-          user: updatedUser[0],
+          user: updatedUserData,
         },
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Failed to update wallet balance',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to update wallet balance',
+        );
+      }
+      throw new InternalServerErrorException('Failed to update wallet balance');
     }
   }
 
@@ -582,7 +654,11 @@ export class UsersService {
       }
 
       const user = userResult[0];
-      const calculatedBalance = user.referralCount * 250;
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const calculatedBalance = (user.referralCount || 0) * 250;
 
       return {
         statusCode: HttpStatus.OK,
@@ -590,16 +666,19 @@ export class UsersService {
         data: {
           userId: user.id,
           userName: user.name,
-          referralCount: user.referralCount,
-          currentWalletBalance: user.wallet_balance,
+          referralCount: user.referralCount || 0,
+          currentWalletBalance: user.wallet_balance || 0,
           calculatedBalance,
-          needsUpdate: user.wallet_balance !== calculatedBalance,
+          needsUpdate: (user.wallet_balance || 0) !== calculatedBalance,
         },
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Failed to get wallet balance',
-      );
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message || 'Failed to get wallet balance',
+        );
+      }
+      throw new InternalServerErrorException('Failed to get wallet balance');
     }
   }
 }

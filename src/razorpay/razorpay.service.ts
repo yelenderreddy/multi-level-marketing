@@ -21,7 +21,9 @@ export class RazorpayService {
     const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
 
     if (!keyId || !keySecret) {
-      console.warn('Razorpay credentials not configured. Using test credentials.');
+      console.warn(
+        'Razorpay credentials not configured. Using test credentials.',
+      );
       // Use test credentials if not configured
       this.razorpay = new Razorpay({
         key_id: 'rzp_test_51HqjWmKgnvOcbXg',
@@ -58,7 +60,7 @@ export class RazorpayService {
           currency,
           receipt,
           notes,
-          status: 'created'
+          status: 'created',
         };
 
         // save to DB
@@ -94,6 +96,12 @@ export class RazorpayService {
       return order;
     } catch (error) {
       console.error('Razorpay order creation error:', error);
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          error.message ||
+            'Failed to create payment order. Please try again later.',
+        );
+      }
       throw new InternalServerErrorException(
         'Failed to create payment order. Please try again later.',
       );

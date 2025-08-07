@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  HttpStatus,
+} from '@nestjs/common';
 import { PrivacyService } from './privacy.service';
 import { CreatePrivacyDto, UpdatePrivacyDto } from './privacy.dto';
 
@@ -47,8 +56,14 @@ export class PrivacyController {
   }
 
   @Put(':id')
-  async updatePrivacy(@Param('id') id: string, @Body() updatePrivacyDto: UpdatePrivacyDto) {
-    const privacy = await this.privacyService.updatePrivacy(parseInt(id), updatePrivacyDto);
+  async updatePrivacy(
+    @Param('id') id: string,
+    @Body() updatePrivacyDto: UpdatePrivacyDto,
+  ) {
+    const privacy = await this.privacyService.updatePrivacy(
+      parseInt(id),
+      updatePrivacyDto,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: 'Privacy policy updated successfully',
@@ -65,4 +80,4 @@ export class PrivacyController {
       data: null,
     };
   }
-} 
+}

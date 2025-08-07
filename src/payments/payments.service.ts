@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { db } from '../db/dbConnection/db.connect';
 import { payments, users } from '../db/schemas';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { PaymentResponseDto, PaymentStatsDto } from './payments.dto';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class PaymentsService {
       .where(eq(payments.user_id, userId))
       .orderBy(desc(payments.created_at));
 
-    return userPayments.map(payment => ({
+    return userPayments.map((payment) => ({
       id: payment.id,
       userId: payment.userId,
       orderId: payment.orderId,
@@ -63,7 +63,7 @@ export class PaymentsService {
       .leftJoin(users, eq(payments.user_id, users.id))
       .orderBy(desc(payments.created_at));
 
-    return allPayments.map(payment => ({
+    return allPayments.map((payment) => ({
       id: payment.id,
       userId: payment.userId,
       orderId: payment.orderId,
@@ -94,9 +94,9 @@ export class PaymentsService {
     let failedAmount = 0;
     let refundedAmount = 0;
 
-    userPayments.forEach(payment => {
+    userPayments.forEach((payment) => {
       totalPayments++;
-      const amount = parseFloat(payment.amount);
+      const amount = parseFloat(payment.amount || '0');
       totalAmount += amount;
 
       switch (payment.status) {
@@ -147,6 +147,10 @@ export class PaymentsService {
     }
 
     const paymentData = payment[0];
+    if (!paymentData) {
+      return null;
+    }
+
     return {
       id: paymentData.id,
       userId: paymentData.userId,
@@ -160,4 +164,57 @@ export class PaymentsService {
       updatedAt: paymentData.updatedAt,
     };
   }
-} 
+
+  async getPaymentsWithUserDetails(): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          id: payments.id,
+          user_id: payments.user_id,
+          order_id: payments.order_id,
+          amount: payments.amount,
+          currency: payments.currency,
+          status: payments.status,
+          payment_id: payments.payment_id,
+          receipt: payments.receipt,
+          created_at: payments.created_at,
+          updated_at: payments.updated_at,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            mobileNumber: users.mobileNumber,
+            referral_code: users.referral_code,
+          },
+        })
+        .from(payments)
+        .leftJoin(users, eq(payments.user_id, users.id))
+        .orderBy(payments.created_at);
+
+      return result.map((item) => ({
+        id: item.id,
+        user_id: item.user_id,
+        order_id: item.order_id,
+        amount: item.amount,
+        currency: item.currency,
+        status: item.status,
+        payment_id: item.payment_id,
+        receipt: item.receipt,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        user: item.user
+          ? {
+              id: item.user.id,
+              name: item.user.name,
+              email: item.user.email,
+              mobileNumber: item.user.mobileNumber,
+              referral_code: item.user.referral_code,
+            }
+          : null,
+      }));
+    } catch (error) {
+      console.error('Error fetching payments with user details:', error);
+      throw new Error('Failed to fetch payments with user details');
+    }
+  }
+}

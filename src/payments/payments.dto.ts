@@ -25,4 +25,4 @@ export interface PaymentStatsDto {
   paidAmount: number;
   failedAmount: number;
   refundedAmount: number;
-} 
+}

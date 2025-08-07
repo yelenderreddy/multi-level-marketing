@@ -35,4 +35,4 @@ export interface PayoutResponseDto {
     mobileNumber: string;
     referral_code: string;
   };
-} 
+}

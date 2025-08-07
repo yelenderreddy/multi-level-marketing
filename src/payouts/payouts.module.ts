@@ -7,4 +7,4 @@ import { PayoutsService } from './payouts.service';
   providers: [PayoutsService],
   exports: [PayoutsService],
 })
-export class PayoutsModule {} 
+export class PayoutsModule {}
