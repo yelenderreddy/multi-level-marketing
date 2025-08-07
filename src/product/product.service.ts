@@ -228,15 +228,31 @@ export class ProductService {
   //get order history
   async getOrderHistory(userId: number) {
     const orders = await db
-      .select()
+      .select({
+        id: orderHistory.id,
+        userId: orderHistory.userId,
+        productId: orderHistory.productId,
+        productName: orderHistory.productName,
+        quantity: orderHistory.quantity,
+        status: orderHistory.status,
+        orderedAt: orderHistory.orderedAt,
+        productPrice: products.productPrice,
+      })
       .from(orderHistory)
+      .leftJoin(products, eq(orderHistory.productId, products.id))
       .where(eq(orderHistory.userId, userId))
       .orderBy(desc(orderHistory.orderedAt));
+
+    // Transform the data to handle null productPrice
+    const transformedOrders = orders.map(order => ({
+      ...order,
+      productPrice: order.productPrice || 0, // Default to 0 if productPrice is null
+    }));
 
     return {
       statusCode: HttpStatus.OK,
       message: `Order history for user ${userId}`,
-      data: orders,
+      data: transformedOrders,
     };
   }
 
