@@ -119,7 +119,7 @@ export class PayoutsService {
     }
   }
 
-  async updatePayoutStatus(payoutId: string, updatePayoutDto: UpdatePayoutDto): Promise<PayoutResponseDto> {
+  async updatePayoutStatus(payoutId: string, updatePayoutDto: UpdatePayoutDto): Promise<PayoutResponseDto | null> {
     try {
       const updateData: any = {
         updated_at: new Date(),
