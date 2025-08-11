@@ -294,7 +294,7 @@ export class BankDetailsService {
     try {
       // Get current user data for validation and wallet balance deduction
       let user: UserQueryResult | null = null;
-      
+
       if (
         bankDetails.redeemAmount !== undefined &&
         bankDetails.redeemAmount > 0
