@@ -134,4 +134,23 @@ export class AdminController {
     }
     return this.adminService.approveUserReward(id, reward, status);
   }
+
+  // Dashboard Statistics Endpoints
+  @Get('dashboard/stats')
+  @UseGuards(JwtAuthGuard)
+  async getDashboardStats() {
+    return this.adminService.getDashboardStats();
+  }
+
+  @Get('dashboard/total-users')
+  @UseGuards(JwtAuthGuard)
+  async getTotalUsersCount() {
+    return this.adminService.getTotalUsersCount();
+  }
+
+  @Get('dashboard/daily-joins')
+  @UseGuards(JwtAuthGuard)
+  async getDailyJoinsCount() {
+    return this.adminService.getDailyJoinsCount();
+  }
 }
