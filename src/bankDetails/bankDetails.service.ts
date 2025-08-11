@@ -292,7 +292,9 @@ export class BankDetailsService {
     bankDetails: BankDetailsDto,
   ): Promise<BankDetailsWithUser> {
     try {
-      // Validate redeem amount if provided
+      // Get current user data for validation and wallet balance deduction
+      let user: UserQueryResult | null = null;
+      
       if (
         bankDetails.redeemAmount !== undefined &&
         bankDetails.redeemAmount > 0
@@ -311,7 +313,7 @@ export class BankDetailsService {
           throw new NotFoundException('User not found');
         }
 
-        const user = currentUser[0];
+        user = currentUser[0];
         if (!user) {
           throw new NotFoundException('User not found');
         }
@@ -352,6 +354,13 @@ export class BankDetailsService {
         // Validate minimum redeem amount
         if (bankDetails.redeemAmount < 250) {
           throw new BadRequestException('Minimum redeem amount is ₹250');
+        }
+
+        // Validate wallet balance
+        if (bankDetails.redeemAmount > user.wallet_balance) {
+          throw new BadRequestException(
+            `Insufficient wallet balance. You have ₹${user.wallet_balance} but trying to redeem ₹${bankDetails.redeemAmount}`,
+          );
         }
       }
 
@@ -399,6 +408,33 @@ export class BankDetailsService {
             redeemStatus: bankDetails.redeemStatus,
           }),
         });
+      }
+
+      // If redeem amount is provided, create redeem history and deduct wallet balance
+      if (bankDetails.redeemAmount && bankDetails.redeemAmount > 0 && user) {
+        // Create redeem history entry
+        const bankDetailsJson = JSON.stringify({
+          bankName: bankDetails.bankName,
+          accountNumber: bankDetails.accountNumber,
+          ifscCode: bankDetails.ifscCode,
+          accountHolderName: bankDetails.accountHolderName,
+        });
+
+        await db.insert(redeemHistory).values({
+          userId,
+          redeemAmount: bankDetails.redeemAmount,
+          status: 'processing',
+          bankDetails: bankDetailsJson,
+        });
+
+        // Deduct wallet balance
+        await db
+          .update(users)
+          .set({
+            wallet_balance: user.wallet_balance - bankDetails.redeemAmount,
+            updated_at: new Date(),
+          })
+          .where(eq(users.id, userId));
       }
 
       // Return the bank details with user information
@@ -642,6 +678,13 @@ export class BankDetailsService {
         );
       }
 
+      // Validate wallet balance
+      if (redeemAmount > user.wallet_balance) {
+        throw new BadRequestException(
+          `Insufficient wallet balance. You have ₹${user.wallet_balance} but trying to redeem ₹${redeemAmount}`,
+        );
+      }
+
       // Check if bank details exist
       const existingBankDetails = (await db
         .select()
@@ -681,6 +724,15 @@ export class BankDetailsService {
         status: 'processing',
         bankDetails: bankDetailsJson,
       });
+
+      // Deduct wallet balance
+      await db
+        .update(users)
+        .set({
+          wallet_balance: user.wallet_balance - redeemAmount,
+          updated_at: new Date(),
+        })
+        .where(eq(users.id, userId));
 
       // Get the updated bank details with user information
       const result = await this.getBankDetailsWithUser(userId);
@@ -790,6 +842,9 @@ export class BankDetailsService {
             bankDetails: `${bankDetailsParsed.bankName ?? 'N/A'} - A/C: ${bankDetailsParsed.accountNumber ?? 'N/A'} - IFSC: ${bankDetailsParsed.ifscCode ?? 'N/A'}`,
             transactionId: `TXN-${Date.now()}`,
           });
+
+          // Note: Wallet balance is already deducted when redeem request was created
+          // No need to deduct again here as it was done in createOrUpdateBankDetails or updateRedeemAmount
         }
       }
 

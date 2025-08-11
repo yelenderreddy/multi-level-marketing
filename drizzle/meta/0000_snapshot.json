@@ -1,5 +1,5 @@
 {
-  "id": "95c91af5-e3b1-48dc-8a3a-77354ef6b79f",
+  "id": "56a6eed2-6abe-497c-9d19-8aed2c230125",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -315,21 +315,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "users_referred_by_code_users_referral_code_fk": {
-          "name": "users_referred_by_code_users_referral_code_fk",
-          "tableFrom": "users",
-          "tableTo": "users",
-          "columnsFrom": [
-            "referred_by_code"
-          ],
-          "columnsTo": [
-            "referral_code"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_email_unique": {
@@ -509,21 +495,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "payments_user_id_users_id_fk": {
-          "name": "payments_user_id_users_id_fk",
-          "tableFrom": "payments",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -831,21 +803,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "payouts_user_id_users_id_fk": {
-          "name": "payouts_user_id_users_id_fk",
-          "tableFrom": "payouts",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "payouts_payout_id_unique": {
