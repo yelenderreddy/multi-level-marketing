@@ -12,6 +12,43 @@ import { JwtService } from '@nestjs/jwt';
 import { endOfMonth, startOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
+// Type for database query results
+type UserQueryResult = {
+  id: number;
+  name: string;
+  email: string;
+  mobileNumber: string;
+  address: string | null;
+  gender: string | null;
+  password_hash: string;
+  referral_code: string;
+  referralCount: number;
+  referralCountAtLastRedeem: number;
+  reward: string | null;
+  wallet_balance: number;
+  referred_by_code: string | null;
+  payment_status: string;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type UserReferralQueryResult = {
+  id: number;
+  name: string;
+  email: string;
+  mobileNumber: string;
+  address: string | null;
+  gender: string | null;
+  referral_code: string;
+  referred_by_code: string | null;
+  payment_status: string;
+  reward: string | null;
+  referralCount: number;
+  wallet_balance: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
 @Injectable()
 export class UsersService {
   constructor(private readonly jwtService: JwtService) {}
@@ -80,10 +117,10 @@ export class UsersService {
     let finalReferredByCode: string | null = null;
 
     if (referralCode) {
-      const referrerResult = await db
+      const referrerResult = (await db
         .select()
         .from(users)
-        .where(eq(users.referral_code, referralCode));
+        .where(eq(users.referral_code, referralCode))) as UserQueryResult[];
 
       if (!referrerResult || referrerResult.length === 0) {
         throw new NotFoundException(`Invalid referral code: ${referralCode}`);
@@ -183,7 +220,10 @@ export class UsersService {
   }
 
   async getUserById(id: number) {
-    const userResult = await db.select().from(users).where(eq(users.id, id));
+    const userResult = (await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))) as UserQueryResult[];
 
     if (!userResult || userResult.length === 0) {
       return {
@@ -226,10 +266,10 @@ export class UsersService {
   }
 
   async loginUser(email: string, password: string) {
-    const userResult = await db
+    const userResult = (await db
       .select()
       .from(users)
-      .where(eq(users.email, email));
+      .where(eq(users.email, email))) as UserQueryResult[];
 
     if (!userResult || userResult.length === 0) {
       throw new UnauthorizedException('Invalid email or password');
@@ -266,10 +306,12 @@ export class UsersService {
   }
 
   async getUsersReferredBy(referralCode: string) {
-    const referredUsers = await db
+    const referredUsers = (await db
       .select()
       .from(users)
-      .where(eq(users.referred_by_code, referralCode));
+      .where(
+        eq(users.referred_by_code, referralCode),
+      )) as UserReferralQueryResult[];
 
     return {
       statusCode: HttpStatus.OK,
@@ -286,7 +328,7 @@ export class UsersService {
     const startMonthUTC = startOfMonth(now);
     const endMonthUTC = endOfMonth(now);
 
-    const todayUsers = await db
+    const todayUsers = (await db
       .select()
       .from(users)
       .where(
@@ -295,9 +337,9 @@ export class UsersService {
           gte(users.created_at, startTodayUTC),
           lte(users.created_at, endTodayUTC),
         ),
-      );
+      )) as UserReferralQueryResult[];
 
-    const monthUsers = await db
+    const monthUsers = (await db
       .select()
       .from(users)
       .where(
@@ -306,7 +348,7 @@ export class UsersService {
           gte(users.created_at, startMonthUTC),
           lte(users.created_at, endMonthUTC),
         ),
-      );
+      )) as UserReferralQueryResult[];
 
     const todayCount = todayUsers.length;
     const monthCount = monthUsers.length;
@@ -359,7 +401,10 @@ export class UsersService {
     },
   ) {
     try {
-      const userResult = await db.select().from(users).where(eq(users.id, id));
+      const userResult = (await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))) as UserQueryResult[];
 
       if (!userResult || userResult.length === 0) {
         throw new NotFoundException('User not found');
@@ -474,9 +519,9 @@ export class UsersService {
       db.select().from(users).offset(offset).limit(limit),
       db.select({ count: sql`count(*)` }).from(users),
     ]);
-    const usersWithoutPassword = allUsers.map(
-      ({ password_hash, ...user }) => user,
-    );
+    const usersWithoutPassword = allUsers.map(({ password_hash, ...user }) => {
+      return user;
+    });
     return {
       statusCode: 200,
       message: 'Users fetched successfully',

@@ -7,7 +7,6 @@ import {
   text,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { users } from './userSchema';
 
 export const payoutStatusEnum = pgEnum('payout_status', [
   'pending',
@@ -18,9 +17,7 @@ export const payoutStatusEnum = pgEnum('payout_status', [
 
 export const payouts = pgTable('payouts', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id')
-    .references(() => users.id)
-    .notNull(),
+  userId: integer('user_id').notNull(),
   payoutId: varchar('payout_id', { length: 50 }).notNull().unique(),
   amount: integer('amount').notNull(),
   method: varchar('method', { length: 50 }).notNull(), // 'Bank Transfer', 'UPI', etc.

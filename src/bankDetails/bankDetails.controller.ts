@@ -320,13 +320,13 @@ export class BankDetailsController {
     description: 'Bank details validation completed',
   })
   @ApiResponse({ status: 400, description: 'Validation failed' })
-  async validateBankDetails(
+  validateBankDetails(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     bankDetails: CreateBankDetailsDto,
   ) {
     try {
       const validation =
-        await this.bankDetailsService.validateBankDetails(bankDetails);
+        this.bankDetailsService.validateBankDetails(bankDetails);
 
       return {
         statusCode: HttpStatus.OK,

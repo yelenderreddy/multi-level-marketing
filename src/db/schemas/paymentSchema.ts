@@ -7,7 +7,6 @@ import {
   timestamp,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { users } from './userSchema'; // adjust path as per your project
 
 export const paymentStatusEnum = pgEnum('payment_status', [
   'PENDING',
@@ -19,9 +18,7 @@ export const paymentStatusEnum = pgEnum('payment_status', [
 export const payments = pgTable('payments', {
   id: serial('id').primaryKey().notNull(),
 
-  user_id: integer('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }), // FK to users.id
+  user_id: integer('user_id').notNull(), // FK to users.id
 
   order_id: varchar('order_id', { length: 255 }).notNull(), // Razorpay order id
 

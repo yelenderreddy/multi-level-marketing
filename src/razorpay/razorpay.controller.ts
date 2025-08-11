@@ -5,6 +5,19 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 
+// Type for Razorpay webhook payload
+interface RazorpayWebhookPayload {
+  event: string;
+  payload: {
+    payment: {
+      entity: {
+        id: string;
+        order_id: string;
+      };
+    };
+  };
+}
+
 @Controller('api/payments')
 export class RazorpayController {
   constructor(
@@ -76,18 +89,19 @@ export class RazorpayController {
       return res.status(400).send('Invalid signature');
     }
 
-    const event = req.body.event;
+    const webhookBody = req.body as RazorpayWebhookPayload;
+    const event = webhookBody.event;
 
     if (event === 'payment.captured') {
-      const payload = req.body.payload;
+      const payload = webhookBody.payload;
       const paymentEntity = payload?.payment?.entity;
 
       if (paymentEntity) {
         console.log(`✅ Payment Captured: ${paymentEntity.id}`);
 
         await this.razorpayService.markPaymentAsPaid(
-          paymentEntity.order_id as string,
-          paymentEntity.id as string,
+          paymentEntity.order_id,
+          paymentEntity.id,
         );
       }
     }

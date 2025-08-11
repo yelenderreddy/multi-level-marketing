@@ -4,6 +4,83 @@ import { payments, users } from '../db/schemas';
 import { eq, desc } from 'drizzle-orm';
 import { PaymentResponseDto, PaymentStatsDto } from './payments.dto';
 
+interface PaymentWithUser {
+  id: number;
+  userId: number;
+  orderId: string;
+  paymentId: string | null;
+  amount: string;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  receipt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    mobileNumber: string;
+    referral_code: string;
+  } | null;
+}
+
+interface PaymentStats {
+  amount: string | null;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+}
+
+interface PaymentBasic {
+  id: number;
+  userId: number;
+  orderId: string;
+  paymentId: string | null;
+  amount: string;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  receipt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Type for database query results
+type PaymentWithUserQueryResult = {
+  id: number;
+  userId: number;
+  orderId: string;
+  paymentId: string | null;
+  amount: string;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  receipt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    mobileNumber: string;
+    referral_code: string;
+  } | null;
+};
+
+type PaymentStatsQueryResult = {
+  amount: string | null;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+};
+
+type PaymentBasicQueryResult = {
+  id: number;
+  userId: number;
+  orderId: string;
+  paymentId: string | null;
+  amount: string;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  receipt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 @Injectable()
 export class PaymentsService {
   async getPaymentsByUserId(userId: number): Promise<PaymentResponseDto[]> {
@@ -24,7 +101,7 @@ export class PaymentsService {
       .where(eq(payments.user_id, userId))
       .orderBy(desc(payments.created_at));
 
-    return userPayments.map((payment) => ({
+    return userPayments.map((payment: PaymentBasic) => ({
       id: payment.id,
       userId: payment.userId,
       orderId: payment.orderId,
@@ -39,7 +116,7 @@ export class PaymentsService {
   }
 
   async getAllPaymentsWithUsers(): Promise<PaymentResponseDto[]> {
-    const allPayments = await db
+    const allPayments = (await db
       .select({
         id: payments.id,
         userId: payments.user_id,
@@ -61,9 +138,9 @@ export class PaymentsService {
       })
       .from(payments)
       .leftJoin(users, eq(payments.user_id, users.id))
-      .orderBy(desc(payments.created_at));
+      .orderBy(desc(payments.created_at))) as PaymentWithUserQueryResult[];
 
-    return allPayments.map((payment) => ({
+    return allPayments.map((payment: PaymentWithUser) => ({
       id: payment.id,
       userId: payment.userId,
       orderId: payment.orderId,
@@ -79,13 +156,13 @@ export class PaymentsService {
   }
 
   async getPaymentStatsByUserId(userId: number): Promise<PaymentStatsDto> {
-    const userPayments = await db
+    const userPayments = (await db
       .select({
         amount: payments.amount,
         status: payments.status,
       })
       .from(payments)
-      .where(eq(payments.user_id, userId));
+      .where(eq(payments.user_id, userId))) as PaymentStatsQueryResult[];
 
     let totalPayments = 0;
     let totalAmount = 0;
@@ -94,7 +171,7 @@ export class PaymentsService {
     let failedAmount = 0;
     let refundedAmount = 0;
 
-    userPayments.forEach((payment) => {
+    userPayments.forEach((payment: PaymentStats) => {
       totalPayments++;
       const amount = parseFloat(payment.amount || '0');
       totalAmount += amount;
@@ -126,7 +203,7 @@ export class PaymentsService {
   }
 
   async getPaymentById(paymentId: number): Promise<PaymentResponseDto | null> {
-    const payment = await db
+    const payment = (await db
       .select({
         id: payments.id,
         userId: payments.user_id,
@@ -140,13 +217,13 @@ export class PaymentsService {
         updatedAt: payments.updated_at,
       })
       .from(payments)
-      .where(eq(payments.id, paymentId));
+      .where(eq(payments.id, paymentId))) as PaymentBasicQueryResult[];
 
     if (payment.length === 0) {
       return null;
     }
 
-    const paymentData = payment[0];
+    const paymentData = payment[0] as PaymentBasic;
     if (!paymentData) {
       return null;
     }
@@ -165,20 +242,20 @@ export class PaymentsService {
     };
   }
 
-  async getPaymentsWithUserDetails(): Promise<any[]> {
+  async getPaymentsWithUserDetails(): Promise<PaymentWithUser[]> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           id: payments.id,
-          user_id: payments.user_id,
-          order_id: payments.order_id,
+          userId: payments.user_id,
+          orderId: payments.order_id,
+          paymentId: payments.payment_id,
           amount: payments.amount,
           currency: payments.currency,
           status: payments.status,
-          payment_id: payments.payment_id,
           receipt: payments.receipt,
-          created_at: payments.created_at,
-          updated_at: payments.updated_at,
+          createdAt: payments.created_at,
+          updatedAt: payments.updated_at,
           user: {
             id: users.id,
             name: users.name,
@@ -189,19 +266,19 @@ export class PaymentsService {
         })
         .from(payments)
         .leftJoin(users, eq(payments.user_id, users.id))
-        .orderBy(payments.created_at);
+        .orderBy(payments.created_at)) as PaymentWithUserQueryResult[];
 
-      return result.map((item) => ({
+      return result.map((item: PaymentWithUser) => ({
         id: item.id,
-        user_id: item.user_id,
-        order_id: item.order_id,
+        userId: item.userId,
+        orderId: item.orderId,
+        paymentId: item.paymentId,
         amount: item.amount,
         currency: item.currency,
         status: item.status,
-        payment_id: item.payment_id,
         receipt: item.receipt,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
         user: item.user
           ? {
               id: item.user.id,

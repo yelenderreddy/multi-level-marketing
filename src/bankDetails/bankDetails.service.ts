@@ -40,13 +40,85 @@ export interface BankDetailsWithUser {
   };
 }
 
+// Type for database query result
+type BankDetailsWithUserQueryResult = {
+  id: number;
+  accountNumber: string;
+  ifscCode: string;
+  bankName: string;
+  accountHolderName: string;
+  redeemAmount: number | null;
+  redeemStatus: 'processing' | 'deposited';
+  created_at: Date;
+  updated_at: Date;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    mobileNumber: string;
+    referral_code: string;
+    referralCount: number;
+    wallet_balance: number;
+    payment_status: string;
+    created_at: Date;
+    updated_at: Date;
+  };
+};
+
+// Type for user query result
+type UserQueryResult = {
+  wallet_balance: number;
+  referralCount: number;
+  referralCountAtLastRedeem: number;
+};
+
+// Type for redeem history query result
+type RedeemHistoryQueryResult = {
+  total: number;
+};
+
+// Type for redeem history item
+type RedeemHistoryItem = {
+  id: number;
+  redeemAmount: number;
+  status: string;
+  bankDetails: string | null;
+  redeemedAt: Date;
+  depositedAt: Date | null;
+};
+
+// Type for latest processing record query result
+type LatestProcessingRecordQueryResult = {
+  id: number;
+  redeemAmount: number;
+  bankDetails: string | null;
+};
+
+// Type for bank details query result
+type BankDetailsQueryResult = {
+  id: number;
+  accountNumber: string;
+  ifscCode: string;
+  bankName: string;
+  accountHolderName: string;
+  redeemAmount: number | null;
+  redeemStatus: 'processing' | 'deposited';
+  created_at: Date;
+  updated_at: Date;
+};
+
+// Type for user existence check
+type UserExistenceCheck = {
+  id: number;
+};
+
 @Injectable()
 export class BankDetailsService {
   async getBankDetailsWithUser(
     userId: number,
   ): Promise<BankDetailsWithUser | null> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           id: userBankDetails.id,
           accountNumber: userBankDetails.accountNumber,
@@ -72,13 +144,15 @@ export class BankDetailsService {
         })
         .from(userBankDetails)
         .innerJoin(users, eq(userBankDetails.userId, users.id))
-        .where(eq(userBankDetails.userId, userId));
+        .where(
+          eq(userBankDetails.userId, userId),
+        )) as BankDetailsWithUserQueryResult[];
 
       if (result.length === 0) {
         return null;
       }
 
-      const firstResult = result[0];
+      const firstResult: BankDetailsWithUserQueryResult = result[0];
       if (!firstResult) {
         return null;
       }
@@ -89,8 +163,8 @@ export class BankDetailsService {
         ifscCode: firstResult.ifscCode,
         bankName: firstResult.bankName,
         accountHolderName: firstResult.accountHolderName,
-        redeemAmount: firstResult.redeemAmount || 0,
-        redeemStatus: firstResult.redeemStatus || 'processing',
+        redeemAmount: firstResult.redeemAmount ?? 0,
+        redeemStatus: firstResult.redeemStatus ?? 'processing',
         created_at: firstResult.created_at,
         updated_at: firstResult.updated_at,
         user: {
@@ -105,7 +179,7 @@ export class BankDetailsService {
           created_at: firstResult.user.created_at,
           updated_at: firstResult.user.updated_at,
         },
-      } as BankDetailsWithUser;
+      };
     } catch (error) {
       console.error('Error fetching bank details with user:', error);
       throw new Error('Failed to fetch bank details');
@@ -118,10 +192,10 @@ export class BankDetailsService {
   ): Promise<BankDetailsWithUser> {
     try {
       // Check if user exists
-      const userExists = await db
+      const userExists = (await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.id, userId));
+        .where(eq(users.id, userId))) as UserExistenceCheck[];
 
       if (userExists.length === 0) {
         throw new NotFoundException('User not found');
@@ -133,7 +207,7 @@ export class BankDetailsService {
       }
 
       // Check if bank details already exist for this user
-      const existingBankDetails = await db
+      const existingBankDetails: BankDetailsQueryResult[] = await db
         .select()
         .from(userBankDetails)
         .where(eq(userBankDetails.userId, userId));
@@ -177,10 +251,10 @@ export class BankDetailsService {
   ): Promise<BankDetailsWithUser | null> {
     try {
       // Check if bank details exist for this user
-      const existingBankDetails = await db
+      const existingBankDetails = (await db
         .select()
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as BankDetailsQueryResult[];
 
       if (existingBankDetails.length === 0) {
         return null;
@@ -224,14 +298,14 @@ export class BankDetailsService {
         bankDetails.redeemAmount > 0
       ) {
         // Get current user data to validate redeem amount
-        const currentUser = await db
+        const currentUser = (await db
           .select({
             wallet_balance: users.wallet_balance,
             referralCount: users.referralCount,
             referralCountAtLastRedeem: users.referralCountAtLastRedeem,
           })
           .from(users)
-          .where(eq(users.id, userId));
+          .where(eq(users.id, userId))) as UserQueryResult[];
 
         if (currentUser.length === 0) {
           throw new NotFoundException('User not found');
@@ -242,20 +316,21 @@ export class BankDetailsService {
           throw new NotFoundException('User not found');
         }
 
-        const currentReferralCount = user.referralCount || 0;
-        const lastRedeemReferralCount = user.referralCountAtLastRedeem || 0;
+        const currentReferralCount = user.referralCount ?? 0;
 
         // Calculate total earned amount (referrals * 250)
         const totalEarnedAmount = currentReferralCount * 250;
 
         // Get total already redeemed amount
-        const totalRedeemed = await db
+        const totalRedeemed = (await db
           .select({ total: redeemHistory.redeemAmount })
           .from(redeemHistory)
-          .where(eq(redeemHistory.userId, userId));
+          .where(
+            eq(redeemHistory.userId, userId),
+          )) as RedeemHistoryQueryResult[];
 
         const totalAlreadyRedeemed = totalRedeemed.reduce(
-          (sum, item) => sum + (item.total || 0),
+          (sum, item: RedeemHistoryQueryResult) => sum + (item.total ?? 0),
           0,
         );
 
@@ -281,10 +356,10 @@ export class BankDetailsService {
       }
 
       // Check if bank details already exist for this user
-      const existingBankDetails = await db
+      const existingBankDetails = (await db
         .select()
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as BankDetailsQueryResult[];
 
       if (existingBankDetails.length > 0) {
         // Update existing bank details
@@ -347,10 +422,10 @@ export class BankDetailsService {
   async deleteBankDetails(userId: number): Promise<{ message: string }> {
     try {
       // Check if bank details exist for this user
-      const existingBankDetails = await db
+      const existingBankDetails = (await db
         .select()
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as BankDetailsQueryResult[];
 
       if (existingBankDetails.length === 0) {
         throw new NotFoundException('Bank details not found for this user');
@@ -373,10 +448,10 @@ export class BankDetailsService {
 
   async checkBankDetailsExist(userId: number): Promise<boolean> {
     try {
-      const result = await db
+      const result = (await db
         .select({ id: userBankDetails.id })
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as UserExistenceCheck[];
 
       return result.length > 0;
     } catch (error) {
@@ -444,7 +519,7 @@ export class BankDetailsService {
 
   async getAllBankDetailsWithUsers(): Promise<BankDetailsWithUser[]> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           id: userBankDetails.id,
           accountNumber: userBankDetails.accountNumber,
@@ -470,16 +545,18 @@ export class BankDetailsService {
         })
         .from(userBankDetails)
         .innerJoin(users, eq(userBankDetails.userId, users.id))
-        .orderBy(userBankDetails.created_at);
+        .orderBy(
+          userBankDetails.created_at,
+        )) as BankDetailsWithUserQueryResult[];
 
-      return result.map((item) => ({
+      return result.map((item: BankDetailsWithUserQueryResult) => ({
         id: item.id,
         accountNumber: item.accountNumber,
         ifscCode: item.ifscCode,
         bankName: item.bankName,
         accountHolderName: item.accountHolderName,
-        redeemAmount: item.redeemAmount || 0,
-        redeemStatus: item.redeemStatus || 'processing',
+        redeemAmount: item.redeemAmount ?? 0,
+        redeemStatus: item.redeemStatus ?? 'processing',
         created_at: item.created_at,
         updated_at: item.updated_at,
         user: {
@@ -494,7 +571,7 @@ export class BankDetailsService {
           created_at: item.user.created_at,
           updated_at: item.user.updated_at,
         },
-      })) as BankDetailsWithUser[];
+      }));
     } catch (error) {
       console.error('Error fetching all bank details with users:', error);
       throw new Error('Failed to fetch bank details');
@@ -516,14 +593,14 @@ export class BankDetailsService {
       }
 
       // Get current user data to validate redeem amount
-      const currentUser = await db
+      const currentUser = (await db
         .select({
           wallet_balance: users.wallet_balance,
           referralCount: users.referralCount,
           referralCountAtLastRedeem: users.referralCountAtLastRedeem,
         })
         .from(users)
-        .where(eq(users.id, userId));
+        .where(eq(users.id, userId))) as UserQueryResult[];
 
       if (currentUser.length === 0) {
         throw new NotFoundException('User not found');
@@ -534,19 +611,19 @@ export class BankDetailsService {
         throw new NotFoundException('User not found');
       }
 
-      const currentReferralCount = user.referralCount || 0;
+      const currentReferralCount = user.referralCount ?? 0;
 
       // Calculate total earned amount (referrals * 250)
       const totalEarnedAmount = currentReferralCount * 250;
 
       // Get total already redeemed amount
-      const totalRedeemed = await db
+      const totalRedeemed = (await db
         .select({ total: redeemHistory.redeemAmount })
         .from(redeemHistory)
-        .where(eq(redeemHistory.userId, userId));
+        .where(eq(redeemHistory.userId, userId))) as RedeemHistoryQueryResult[];
 
       const totalAlreadyRedeemed = totalRedeemed.reduce(
-        (sum, item) => sum + (item.total || 0),
+        (sum, item: RedeemHistoryQueryResult) => sum + (item.total ?? 0),
         0,
       );
 
@@ -566,10 +643,10 @@ export class BankDetailsService {
       }
 
       // Check if bank details exist
-      const existingBankDetails = await db
+      const existingBankDetails = (await db
         .select()
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as BankDetailsQueryResult[];
 
       if (existingBankDetails.length === 0) {
         throw new NotFoundException('Bank details not found');
@@ -630,10 +707,10 @@ export class BankDetailsService {
   ): Promise<BankDetailsWithUser> {
     try {
       // Check if bank details exist for this user
-      const existingBankDetails = await db
+      const existingBankDetails = (await db
         .select()
         .from(userBankDetails)
-        .where(eq(userBankDetails.userId, userId));
+        .where(eq(userBankDetails.userId, userId))) as BankDetailsQueryResult[];
 
       if (existingBankDetails.length === 0) {
         throw new NotFoundException('Bank details not found for this user');
@@ -656,7 +733,7 @@ export class BankDetailsService {
       // If status is deposited, update redeem history and create payout
       if (status === 'deposited') {
         // Update the latest redeem history record with 'processing' status
-        const latestProcessingRecord = await db
+        const latestProcessingRecord = (await db
           .select({
             id: redeemHistory.id,
             redeemAmount: redeemHistory.redeemAmount,
@@ -669,7 +746,9 @@ export class BankDetailsService {
               eq(redeemHistory.status, 'processing'),
             ),
           )
-          .orderBy(redeemHistory.redeemedAt);
+          .orderBy(
+            redeemHistory.redeemedAt,
+          )) as LatestProcessingRecordQueryResult[];
 
         if (latestProcessingRecord.length > 0) {
           // Get the latest record (last one after ordering by redeemedAt)
@@ -688,19 +767,27 @@ export class BankDetailsService {
             .where(eq(redeemHistory.id, latestRecord.id));
 
           // Create payout record
-          const bankDetailsParsed = latestRecord.bankDetails
-            ? JSON.parse(latestRecord.bankDetails)
+          const bankDetailsParsed: {
+            bankName?: string;
+            accountNumber?: string;
+            ifscCode?: string;
+          } = latestRecord.bankDetails
+            ? (JSON.parse(latestRecord.bankDetails) as {
+                bankName?: string;
+                accountNumber?: string;
+                ifscCode?: string;
+              })
             : {};
           const payoutId = `PAY-${Date.now()}-${userId}`;
 
           await db.insert(payouts).values({
             userId,
             payoutId,
-            amount: latestRecord.redeemAmount || 0,
+            amount: latestRecord.redeemAmount ?? 0,
             method: 'Bank Transfer',
             status: 'completed',
             description: 'Wallet Redemption Payout',
-            bankDetails: `${bankDetailsParsed.bankName || 'N/A'} - A/C: ${bankDetailsParsed.accountNumber || 'N/A'} - IFSC: ${bankDetailsParsed.ifscCode || 'N/A'}`,
+            bankDetails: `${bankDetailsParsed.bankName ?? 'N/A'} - A/C: ${bankDetailsParsed.accountNumber ?? 'N/A'} - IFSC: ${bankDetailsParsed.ifscCode ?? 'N/A'}`,
             transactionId: `TXN-${Date.now()}`,
           });
         }
@@ -721,11 +808,11 @@ export class BankDetailsService {
     }
   }
 
-  async getRedeemHistory(userId: number): Promise<any[]> {
+  async getRedeemHistory(userId: number): Promise<RedeemHistoryItem[]> {
     try {
       console.log('Fetching redeem history for user:', userId);
 
-      const result = await db
+      const result = (await db
         .select({
           id: redeemHistory.id,
           redeemAmount: redeemHistory.redeemAmount,
@@ -736,11 +823,11 @@ export class BankDetailsService {
         })
         .from(redeemHistory)
         .where(eq(redeemHistory.userId, userId))
-        .orderBy(redeemHistory.redeemedAt);
+        .orderBy(redeemHistory.redeemedAt)) as RedeemHistoryItem[];
 
       console.log('Raw redeem history result:', result);
 
-      const mappedResult = result.map((item) => ({
+      const mappedResult = result.map((item: RedeemHistoryItem) => ({
         ...item,
         bankDetails: item.bankDetails ? JSON.parse(item.bankDetails) : null,
       }));

@@ -5,6 +5,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
+// Type for multer file
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
+
 @Injectable()
 export class FileUploadService {
   private uploadPath = 'uploads/';
@@ -12,16 +25,28 @@ export class FileUploadService {
   getMulterConfig() {
     return {
       storage: diskStorage({
-        destination: (req, file, cb) => {
+        destination: (
+          req: any,
+          file: MulterFile,
+          cb: (error: Error | null, destination: string) => void,
+        ) => {
           cb(null, this.uploadPath);
         },
-        filename: (req, file, cb) => {
+        filename: (
+          req: any,
+          file: MulterFile,
+          cb: (error: Error | null, filename: string) => void,
+        ) => {
           // Generate unique filename with original extension
           const uniqueName = `${uuidv4()}${extname(file.originalname || '')}`;
           cb(null, uniqueName);
         },
       }),
-      fileFilter: (req, file, cb) => {
+      fileFilter: (
+        req: any,
+        file: MulterFile,
+        cb: (error: Error | null, acceptFile: boolean) => void,
+      ) => {
         // Accept only image files
         if (
           file.mimetype &&

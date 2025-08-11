@@ -12,6 +12,27 @@ import {
   PayoutResponseDto,
 } from './payouts.dto';
 
+// Type for database query results
+type PayoutQueryResult = {
+  id: number;
+  userId: number;
+  payoutId: string;
+  amount: number;
+  method: string;
+  status: 'pending' | 'completed' | 'failed' | 'processing';
+  description: string;
+  bankDetails: string;
+  transactionId?: string | null;
+  date: Date;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type PayoutStatsQueryResult = {
+  status: 'pending' | 'completed' | 'failed' | 'processing';
+  amount: number;
+};
+
 @Injectable()
 export class PayoutsService {
   async createPayout(
@@ -19,10 +40,10 @@ export class PayoutsService {
   ): Promise<PayoutResponseDto> {
     try {
       // Check if user exists
-      const userExists = await db
+      const userExists = (await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.id, createPayoutDto.userId));
+        .where(eq(users.id, createPayoutDto.userId))) as { id: number }[];
 
       if (userExists.length === 0) {
         throw new NotFoundException('User not found');
@@ -34,10 +55,12 @@ export class PayoutsService {
       }
 
       // Check if payout ID already exists
-      const existingPayout = await db
+      const existingPayout = (await db
         .select({ id: payouts.id })
         .from(payouts)
-        .where(eq(payouts.payoutId, createPayoutDto.payoutId));
+        .where(eq(payouts.payoutId, createPayoutDto.payoutId))) as {
+        id: number;
+      }[];
 
       if (existingPayout.length > 0) {
         throw new BadRequestException('Payout ID already exists');
@@ -78,7 +101,7 @@ export class PayoutsService {
 
   async getPayoutsByUserId(userId: number): Promise<PayoutResponseDto[]> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           id: payouts.id,
           userId: payouts.userId,
@@ -95,7 +118,7 @@ export class PayoutsService {
         })
         .from(payouts)
         .where(eq(payouts.userId, userId))
-        .orderBy(desc(payouts.created_at));
+        .orderBy(desc(payouts.created_at))) as PayoutQueryResult[];
 
       return result.map((payout) => this.mapToResponseDto(payout));
     } catch (error) {
@@ -106,7 +129,7 @@ export class PayoutsService {
 
   async getAllPayoutsWithUsers(): Promise<PayoutResponseDto[]> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           id: payouts.id,
           userId: payouts.userId,
@@ -122,7 +145,7 @@ export class PayoutsService {
           updated_at: payouts.updated_at,
         })
         .from(payouts)
-        .orderBy(desc(payouts.created_at));
+        .orderBy(desc(payouts.created_at))) as PayoutQueryResult[];
 
       return result.map((payout) => this.mapToResponseDto(payout));
     } catch (error) {
@@ -136,7 +159,7 @@ export class PayoutsService {
     updatePayoutDto: UpdatePayoutDto,
   ): Promise<PayoutResponseDto | null> {
     try {
-      const result = await db
+      const result = (await db
         .update(payouts)
         .set({
           status: updatePayoutDto.status,
@@ -145,7 +168,7 @@ export class PayoutsService {
           updated_at: new Date(),
         })
         .where(eq(payouts.payoutId, payoutId))
-        .returning();
+        .returning()) as PayoutQueryResult[];
 
       if (result.length === 0) {
         return null;
@@ -168,10 +191,10 @@ export class PayoutsService {
 
   async getPayoutById(payoutId: string): Promise<PayoutResponseDto | null> {
     try {
-      const result = await db
+      const result = (await db
         .select()
         .from(payouts)
-        .where(eq(payouts.payoutId, payoutId));
+        .where(eq(payouts.payoutId, payoutId))) as PayoutQueryResult[];
 
       if (result.length === 0) {
         return null;
@@ -201,13 +224,13 @@ export class PayoutsService {
     failedAmount: number;
   }> {
     try {
-      const result = await db
+      const result = (await db
         .select({
           status: payouts.status,
           amount: payouts.amount,
         })
         .from(payouts)
-        .where(eq(payouts.userId, userId));
+        .where(eq(payouts.userId, userId))) as PayoutStatsQueryResult[];
 
       const stats = {
         totalPayouts: result.length,

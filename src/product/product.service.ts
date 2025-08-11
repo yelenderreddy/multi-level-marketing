@@ -12,6 +12,32 @@ import { desc, eq } from 'drizzle-orm';
 import { orderHistory } from 'src/db/schemas/orderHistorySchema';
 import { FileUploadService } from './file-upload.service';
 
+// Type for database query results
+type OrderDetailsQueryResult = {
+  id: number;
+  userId: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  status: string;
+  orderedAt: Date;
+  userName: string | null;
+  userEmail: string | null;
+  userMobile: string | null;
+  userAddress: string | null;
+  userGender: string | null;
+  userReferralCode: string | null;
+  userPaymentStatus: string | null;
+  productPrice: number | null;
+  productCount: number | null;
+  productStatus: string | null;
+  productCode: number | null;
+};
+
+type TotalCountQueryResult = {
+  count: number;
+};
+
 @Injectable()
 export class ProductService {
   constructor(private readonly fileUploadService: FileUploadService) {}
@@ -493,12 +519,12 @@ export class ProductService {
       const offset = (page - 1) * limit;
 
       // Get total count
-      const totalCount = await db
+      const totalCount = (await db
         .select({ count: orderHistory.id })
-        .from(orderHistory);
+        .from(orderHistory)) as TotalCountQueryResult[];
 
       // Get paginated order details with user and product information
-      const result = await db
+      const result = (await db
         .select({
           id: orderHistory.id,
           userId: orderHistory.userId,
@@ -526,7 +552,7 @@ export class ProductService {
         .leftJoin(products, eq(orderHistory.productId, products.id))
         .orderBy(desc(orderHistory.orderedAt))
         .limit(limit)
-        .offset(offset);
+        .offset(offset)) as OrderDetailsQueryResult[];
 
       const total = totalCount.length;
       const totalPages = Math.ceil(total / limit);

@@ -94,7 +94,7 @@ export class RazorpayService {
       });
 
       return order;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Razorpay order creation error:', error);
       if (error instanceof Error) {
         throw new InternalServerErrorException(
@@ -102,6 +102,7 @@ export class RazorpayService {
             'Failed to create payment order. Please try again later.',
         );
       }
+
       throw new InternalServerErrorException(
         'Failed to create payment order. Please try again later.',
       );

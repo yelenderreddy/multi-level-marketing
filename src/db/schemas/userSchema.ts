@@ -27,10 +27,7 @@ export const users = pgTable('users', {
   reward: varchar('reward', { length: 255 }),
   wallet_balance: integer('wallet_balance').default(0).notNull(),
   // establish relationship using referral_code
-  referred_by_code: varchar('referred_by_code', { length: 50 }).references(
-    () => users.referral_code,
-    { onDelete: 'set null' },
-  ),
+  referred_by_code: varchar('referred_by_code', { length: 50 }),
 
   payment_status: paymentStatusEnum('payment_status')
     .default('PENDING')

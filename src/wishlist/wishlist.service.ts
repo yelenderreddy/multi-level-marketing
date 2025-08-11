@@ -5,6 +5,28 @@ import { products } from '../db/schemas/productSchema';
 import { users } from '../db/schemas/userSchema';
 import { eq, and } from 'drizzle-orm';
 
+// Type for database query results
+type WishlistWithProductAndUserQueryResult = {
+  wishlistId: number;
+  createdAt: Date;
+  productId: number;
+  productName: string | null;
+  productPrice: number | null;
+  productStatus: string | null;
+  userId: number | null;
+  userName: string | null;
+  userEmail: string | null;
+};
+
+type WishlistQueryResult = {
+  id: number;
+  userId: number;
+  productId: number;
+  productName: string;
+  productPrice: number;
+  created_at: Date;
+};
+
 @Injectable()
 export class WishlistService {
   // Add logic to handle wishlist operations
@@ -31,7 +53,7 @@ export class WishlistService {
 
   async getWishlistByUserId(userId: number) {
     // Fetch wishlist items for the user, join with products and users for full details
-    const result = await db
+    const result = (await db
       .select({
         wishlistId: wishlist.id,
         createdAt: wishlist.created_at,
@@ -46,7 +68,9 @@ export class WishlistService {
       .from(wishlist)
       .leftJoin(products, eq(wishlist.productId, products.id))
       .leftJoin(users, eq(wishlist.userId, users.id))
-      .where(eq(wishlist.userId, userId));
+      .where(
+        eq(wishlist.userId, userId),
+      )) as WishlistWithProductAndUserQueryResult[];
 
     return result.map((item) => ({
       wishlistId: item.wishlistId,
@@ -62,28 +86,28 @@ export class WishlistService {
   }
 
   async removeFromWishlist(wishlistId: number, userId: number) {
-    const result = await db
+    const result = (await db
       .delete(wishlist)
       .where(eq(wishlist.id, wishlistId))
-      .returning();
+      .returning()) as WishlistQueryResult[];
     return result;
   }
 
   async clearWishlist(userId: number) {
-    const result = await db
+    const result = (await db
       .delete(wishlist)
       .where(eq(wishlist.userId, userId))
-      .returning();
+      .returning()) as WishlistQueryResult[];
     return result;
   }
 
   async isInWishlist(userId: number, productId: number) {
-    const result = await db
+    const result = (await db
       .select()
       .from(wishlist)
       .where(
         and(eq(wishlist.userId, userId), eq(wishlist.productId, productId)),
-      );
+      )) as WishlistQueryResult[];
     return { isInWishlist: result.length > 0 };
   }
 }
