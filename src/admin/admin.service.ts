@@ -225,42 +225,42 @@ export class AdminService {
       const totalUsersResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users);
-      
+
       const totalUsers = totalUsersResult[0]?.count || 0;
 
       // Get today's joined users count (users created today)
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of today
-      
+
       const todayJoinsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
         .where(gte(users.created_at, today));
-      
+
       const todayJoins = todayJoinsResult[0]?.count || 0;
 
       // Get weekly joins (last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       weekAgo.setHours(0, 0, 0, 0);
-      
+
       const weeklyJoinsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
         .where(gte(users.created_at, weekAgo));
-      
+
       const weeklyJoins = weeklyJoinsResult[0]?.count || 0;
 
       // Get monthly joins (last 30 days)
       const monthAgo = new Date();
       monthAgo.setDate(monthAgo.getDate() - 30);
       monthAgo.setHours(0, 0, 0, 0);
-      
+
       const monthlyJoinsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
         .where(gte(users.created_at, monthAgo));
-      
+
       const monthlyJoins = monthlyJoinsResult[0]?.count || 0;
 
       // Get daily joins data for the last 7 days (for charts)
@@ -269,17 +269,17 @@ export class AdminService {
         const date = new Date();
         date.setDate(date.getDate() - i);
         date.setHours(0, 0, 0, 0);
-        
+
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
-        
+
         const dailyCountResult = await db
           .select({ count: sql<number>`count(*)` })
           .from(users)
           .where(
-            sql`${users.created_at} >= ${date} AND ${users.created_at} < ${nextDate}`
+            sql`${users.created_at} >= ${date} AND ${users.created_at} < ${nextDate}`,
           );
-        
+
         dailyJoinsData.push({
           date: date.toLocaleDateString('en-US', { weekday: 'short' }),
           joins: dailyCountResult[0]?.count || 0,
@@ -297,16 +297,19 @@ export class AdminService {
         .orderBy(sql`${users.referralCount} DESC`)
         .limit(1);
 
-      const topReferrerToday = topReferrerTodayResult.length > 0 
-        ? `${topReferrerTodayResult[0].name} (${topReferrerTodayResult[0].referralCount} referrals)`
-        : 'None';
+      const topReferrerToday =
+        topReferrerTodayResult.length > 0
+          ? `${topReferrerTodayResult[0].name} (${topReferrerTodayResult[0].referralCount} referrals)`
+          : 'None';
 
       // Get users with pending rewards (reward status not 'delivered')
       const pendingRewardsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
-        .where(sql`${users.reward} IS NOT NULL AND ${users.reward} != 'delivered'`);
-      
+        .where(
+          sql`${users.reward} IS NOT NULL AND ${users.reward} != 'delivered'`,
+        );
+
       const pendingRewards = pendingRewardsResult[0]?.count || 0;
 
       return {
@@ -322,7 +325,7 @@ export class AdminService {
           pendingRewards,
           // Additional stats can be added here
           giftPoolBalance: 0, // Placeholder - implement based on your gift pool logic
-          companyProfit: 0,   // Placeholder - implement based on your profit logic
+          companyProfit: 0, // Placeholder - implement based on your profit logic
         },
       };
     } catch (error) {
@@ -332,7 +335,9 @@ export class AdminService {
           error.message || 'Failed to fetch dashboard statistics',
         );
       }
-      throw new InternalServerErrorException('Failed to fetch dashboard statistics');
+      throw new InternalServerErrorException(
+        'Failed to fetch dashboard statistics',
+      );
     }
   }
 
@@ -341,9 +346,9 @@ export class AdminService {
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(users);
-      
+
       const totalUsers = result[0]?.count || 0;
-      
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Total users count fetched successfully',
@@ -356,7 +361,9 @@ export class AdminService {
           error.message || 'Failed to fetch total users count',
         );
       }
-      throw new InternalServerErrorException('Failed to fetch total users count');
+      throw new InternalServerErrorException(
+        'Failed to fetch total users count',
+      );
     }
   }
 
@@ -364,14 +371,14 @@ export class AdminService {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of today
-      
+
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
         .where(gte(users.created_at, today));
-      
+
       const todayJoins = result[0]?.count || 0;
-      
+
       return {
         statusCode: HttpStatus.OK,
         message: 'Daily joins count fetched successfully',
@@ -384,7 +391,9 @@ export class AdminService {
           error.message || 'Failed to fetch daily joins count',
         );
       }
-      throw new InternalServerErrorException('Failed to fetch daily joins count');
+      throw new InternalServerErrorException(
+        'Failed to fetch daily joins count',
+      );
     }
   }
 }
