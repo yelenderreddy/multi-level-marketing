@@ -4,9 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-dist
-build
+# Build outputs (exclude from build context, but will be created during build)
+# dist
+# build
 coverage
 
 # Environment files

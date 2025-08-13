@@ -31,12 +31,27 @@ COPY nest-cli.json ./
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci
 
-# Copy source code
+# Copy source code and build scripts
 COPY src/ ./src/
 COPY drizzle/ ./drizzle/
+COPY build-success.js ./
+
+# Verify files are copied correctly
+RUN echo "Verifying source files..." && \
+    ls -la src/ && \
+    echo "Verifying drizzle files..." && \
+    ls -la drizzle/ && \
+    echo "Verifying build script..." && \
+    ls -la build-success.js
 
 # Build the application
-RUN npm run build
+RUN echo "Starting build process..." && \
+    npm run build && \
+    echo "Build completed successfully" && \
+    ls -la dist/ && \
+    echo "Verifying build output..." && \
+    ls -la dist/main.js && \
+    echo "Build verification complete"
 
 # Stage 3: Production runtime
 FROM node:18-alpine AS runtime
@@ -53,6 +68,7 @@ RUN apk add --no-cache dumb-init
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nestjs:nodejs /app/drizzle ./drizzle
 
 # Create uploads directory for file storage
 RUN mkdir -p uploads && chown -R nestjs:nodejs uploads
