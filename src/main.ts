@@ -59,7 +59,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.SERVER_PORT ?? 3000;
+  const port =  process.env.SERVER_PORT ?? 3000;
   const env = process.env.NODE_ENV ?? 'development';
   const now = new Date().toISOString();
 

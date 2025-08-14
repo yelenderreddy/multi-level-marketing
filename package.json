@@ -8,6 +8,7 @@
   "scripts": {
     "build": "nest build",
     "build:with-success": "nest build && node build-success.js",
+    "test:env": "node test-env.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
